@@ -4,6 +4,8 @@ import android.os.*
 import android.speech.tts.TextToSpeech
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.view.*
@@ -86,19 +88,35 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun btn(s:String,a:()->Unit){root.addView(Button(this).apply{text=s;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100));background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))};setPadding(18,16,18,16);setOnClickListener{a()}},LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})}
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
+ private val domecekImageWords=listOf("dům","byt","pokoj","postel","polštář","deka","stůl","židle","okno","dveře","lampa","skříň","pohovka","televize","telefon","kniha","hračka","míč","kočka","pes","jíst","pít","spát","sedět","stát")
+ private val homeSheet:Bitmap by lazy{BitmapFactory.decodeResource(resources,R.drawable.home_sprite)}
+ private fun homeBitmapFor(word:String):Bitmap?{
+  val index=domecekImageWords.indexOf(word)
+  if(index<0)return null
+  return try{
+   val cols=5
+   val rows=5
+   val cellW=homeSheet.width/cols
+   val cellH=homeSheet.height/rows
+   val x=(index%cols)*cellW
+   val y=(index/cols)*cellH
+   if(cellW<=0||cellH<=0||x+cellW>homeSheet.width||y+cellH>homeSheet.height)null
+   else Bitmap.createBitmap(homeSheet,x,y,cellW,cellH)
+  }catch(e:Exception){null}
+ }
  private fun showWordVisual(x:Word){
-  val bmp=DomecekSprite.bitmapFor(x.name)
-  if(x.world=="Domeček" && bmp!=null){
-   root.addView(ImageView(this).apply{setImageBitmap(bmp);scaleType=ImageView.ScaleType.CENTER_CROP;contentDescription=x.name},LinearLayout.LayoutParams(520,520).apply{setMargins(8,12,8,12)})
+  val bmp=if(x.world=="Domeček")homeBitmapFor(x.name)else null
+  if(bmp!=null){
+   root.addView(ImageView(this).apply{setImageBitmap(bmp);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name},LinearLayout.LayoutParams(520,420).apply{setMargins(8,12,8,12)})
   }else text(x.icon,112)
  }
  private fun wordBtn(x:Word,a:()->Unit){
-  val bmp=if(x.world=="Domeček") DomecekSprite.bitmapFor(x.name) else null
+  val bmp=if(x.world=="Domeček")homeBitmapFor(x.name)else null
   if(bmp==null){btn(x.icon+"   "+x.name,a);return}
   root.addView(Button(this).apply{
    text=x.name;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100))
    background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))}
-   val d=BitmapDrawable(resources,bmp);d.setBounds(0,0,210,210);setCompoundDrawables(null,d,null,null);compoundDrawablePadding=8
+   val d=BitmapDrawable(resources,bmp);d.setBounds(0,0,210,160);setCompoundDrawables(null,d,null,null);compoundDrawablePadding=8
    setPadding(12,14,12,14);setOnClickListener{a()}
   },LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
  }
