@@ -1,6 +1,12 @@
 package cz.ceskymedvidek.app
+import android.Manifest
 import android.app.*
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.*
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.graphics.Color
 import android.graphics.Typeface
@@ -8,13 +14,18 @@ import android.graphics.drawable.GradientDrawable
 import android.view.*
 import android.view.animation.OvershootInterpolator
 import android.widget.*
+import java.text.Normalizer
 import java.util.Locale
 
 data class Word(val name:String,val icon:String,val world:String)
 
 class MainActivity:Activity(),TextToSpeech.OnInitListener{
+ companion object{private const val REQ_RECORD_AUDIO=41}
  private lateinit var root:LinearLayout
  private lateinit var tts:TextToSpeech
+ private var speechRecognizer:SpeechRecognizer?=null
+ private var speechStatus:TextView?=null
+ private var expectedSpeechWord:String?=null
  private val prefs by lazy{getSharedPreferences("medvidek",MODE_PRIVATE)}
  private var stars:Int get()=prefs.getInt("stars",0); set(v){prefs.edit().putInt("stars",v).apply()}
  private val vocabulary=mapOf(
@@ -69,6 +80,10 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  override fun onInit(s:Int){if(s==TextToSpeech.SUCCESS){tts.language=Locale("cs","CZ");tts.setSpeechRate(.82f)}}
  private fun base(){root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_HORIZONTAL;setPadding(28,42,28,28);background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(220,246,255),Color.rgb(247,238,255)))};setContentView(ScrollView(this).apply{addView(root)})}
  private fun text(s:String,size:Int=22,bold:Boolean=false){root.addView(TextView(this).apply{text=s;textSize=size.toFloat();gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));if(bold)setTypeface(typeface,Typeface.BOLD);setPadding(8,10,8,10)})}
+ private fun speechInfo(s:String="Klepni na mikrofon a slovo zopakuj."){
+  speechStatus=TextView(this).apply{text=s;textSize=17f;gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));setPadding(8,8,8,12)}
+  root.addView(speechStatus)
+ }
  private fun bigBtn(title:String,subtitle:String,color:Int,a:()->Unit){
   root.addView(Button(this).apply{
    text=title+"\n"+subtitle
@@ -120,11 +135,95 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   root.addView(card,LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
  }
  private fun splash(){base();root.gravity=Gravity.CENTER;val b=TextView(this).apply{text="🧸";textSize=112f;gravity=Gravity.CENTER;alpha=0f;scaleX=.4f;scaleY=.4f};root.addView(b);text("Český medvídek",34,true);b.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700).setInterpolator(OvershootInterpolator());Handler(Looper.getMainLooper()).postDelayed({home()},2200)}
- private fun home(){base();root.setPadding(32,34,32,34);text("Český medvídek",34,true);text("🧸",88);text("Co si dnes dáme?",24,true);text("⭐ "+stars+"     🏆 "+(1+stars/20),18,true);bigBtn("📚 UČÍM SE","Obrázky • slova • poslech",Color.rgb(67,136,230)){worlds(false)};bigBtn("🎯 HRAJU SI","Najdi správný obrázek",Color.rgb(255,155,72)){worlds(true)};bigBtn("🎓 DO ŠKOLY","Počítání • pokyny • orientace",Color.rgb(89,180,120)){schoolPrep()};btn("🎁 Moje odměny"){rewards()}}
+ private fun home(){cancelListening();base();root.setPadding(32,34,32,34);text("Český medvídek",34,true);text("🧸",88);text("Co si dnes dáme?",24,true);text("⭐ "+stars+"     🏆 "+(1+stars/20),18,true);bigBtn("📚 UČÍM SE","Obrázky • slova • poslech",Color.rgb(67,136,230)){worlds(false)};bigBtn("🗣️ VÝSLOVNOST","Poslechni • zopakuj • mikrofon",Color.rgb(151,103,214)){listen()};bigBtn("🎯 HRAJU SI","Najdi správný obrázek",Color.rgb(255,155,72)){worlds(true)};bigBtn("🎓 DO ŠKOLY","Počítání • pokyny • orientace",Color.rgb(89,180,120)){schoolPrep()};btn("🎁 Moje odměny"){rewards()}}
  private fun worlds(q:Boolean){base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true);text(if(q)"Kde si chceš zahrát?" else "Co se chceš učit?",20);worldList.forEach{w->btn(w.second+"   "+w.first){if(q)quiz(w.first)else learn(w.first,0)}};btn("🏠 Domů"){home()}}
- private fun learn(world:String,i:Int){val ws=words.filter{it.world==world};val x=ws[i%ws.size];base();text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true);btn("🔊  Poslechni si"){say(x.name)};btn("Další  ➜"){learn(world,i+1)};btn("🎯  Procvičit"){quiz(world)};btn("⌂  Domů"){home()}}
+ private fun learn(world:String,i:Int){cancelListening();val ws=words.filter{it.world==world};val x=ws[i%ws.size];base();text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true);btn("🔊  Poslechni si"){say(x.name)};btn("🎤  Řekni slovo"){startListening(x.name)};speechInfo();btn("Další  ➜"){learn(world,i+1)};btn("🎯  Procvičit"){quiz(world)};btn("⌂  Domů"){home()}}
  private fun quiz(world:String){val pool=words.filter{it.world==world};val target=pool.random();val choices=(pool.filter{it!=target}.shuffled().take(3)+target).shuffled();base();text("Najdi správný obrázek",25,true);text("Najdi: "+target.name,30,true);btn("🔊  Přehrát zadání"){say("Najdi "+target.name)};choices.forEach{c->wordBtn(c){if(c==target){stars+=1;say("Výborně");Toast.makeText(this,"⭐ +1 hvězdička",Toast.LENGTH_SHORT).show();quiz(world)}else{say("Zkus to ještě jednou");Toast.makeText(this,"Zkus to ještě jednou",Toast.LENGTH_SHORT).show()}}};btn("⌂  Domů"){home()}}
- private fun listen(){val x=words.random();base();text("Poslouchej a opakuj",27,true);showWordVisual(x);text(x.name,34,true);btn("🔊  Přehrát slovo"){say(x.name)};btn("Další slovo"){listen()};btn("⌂  Domů"){home()}}
+ private fun listen(){cancelListening();val x=words.random();base();text("🗣️ Výslovnost",27,true);showWordVisual(x);text(x.name,34,true);btn("🔊  Poslechni si"){say(x.name)};btn("🎤  Teď řekni slovo"){startListening(x.name)};speechInfo("Nejdřív si slovo poslechni, potom ho řekni do mikrofonu.");btn("Další slovo"){listen()};btn("⌂  Domů"){home()}}
+ private fun startListening(word:String){
+  expectedSpeechWord=word
+  if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
+   requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO),REQ_RECORD_AUDIO)
+   return
+  }
+  beginSpeechRecognition()
+ }
+ private fun beginSpeechRecognition(){
+  val target=expectedSpeechWord?:return
+  if(!SpeechRecognizer.isRecognitionAvailable(this)){
+   speechStatus?.text="Rozpoznávání řeči není v tomto telefonu dostupné."
+   Toast.makeText(this,"Rozpoznávání řeči není dostupné",Toast.LENGTH_LONG).show()
+   return
+  }
+  if(speechRecognizer==null){
+   speechRecognizer=SpeechRecognizer.createSpeechRecognizer(this).also{r->
+    r.setRecognitionListener(object:RecognitionListener{
+     override fun onReadyForSpeech(params:Bundle?){speechStatus?.text="🎤 Poslouchám… řekni slovo."}
+     override fun onBeginningOfSpeech(){speechStatus?.text="🎤 Slyším tě…"}
+     override fun onRmsChanged(rmsdB:Float){}
+     override fun onBufferReceived(buffer:ByteArray?){}
+     override fun onEndOfSpeech(){speechStatus?.text="Kontroluji slovo…"}
+     override fun onError(error:Int){
+      speechStatus?.text=when(error){
+       SpeechRecognizer.ERROR_NO_MATCH->"Nerozuměl jsem. Zkus to ještě jednou."
+       SpeechRecognizer.ERROR_SPEECH_TIMEOUT->"Nic jsem neslyšel. Zkus to znovu."
+       SpeechRecognizer.ERROR_AUDIO->"Mikrofon se nepodařilo použít."
+       SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS->"Aplikace nemá povolený mikrofon."
+       SpeechRecognizer.ERROR_NETWORK,SpeechRecognizer.ERROR_NETWORK_TIMEOUT->"Rozpoznávání řeči teď není dostupné."
+       else->"Nepodařilo se rozpoznat slovo. Zkus to znovu."
+      }
+     }
+     override fun onResults(results:Bundle?){
+      val heard=results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
+      checkSpokenWord(heard)
+     }
+     override fun onPartialResults(partialResults:Bundle?){}
+     override fun onEvent(eventType:Int,params:Bundle?){}
+    })
+   }
+  }
+  speechStatus?.text="🎤 Připravuji mikrofon…"
+  val intent=Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply{
+   putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+   putExtra(RecognizerIntent.EXTRA_LANGUAGE,"cs-CZ")
+   putExtra(RecognizerIntent.EXTRA_MAX_RESULTS,5)
+   putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS,false)
+   putExtra(RecognizerIntent.EXTRA_PROMPT,target)
+  }
+  try{
+   speechRecognizer?.cancel()
+   speechRecognizer?.startListening(intent)
+  }catch(_:Exception){
+   speechStatus?.text="Mikrofon se nepodařilo spustit. Zkus to znovu."
+  }
+ }
+ private fun normalizeSpeech(s:String):String{
+  val plain=Normalizer.normalize(s.lowercase(Locale("cs","CZ")),Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"),"")
+  return plain.replace(Regex("[^a-z0-9 ]")," ").replace(Regex("\\s+")," ").trim()
+ }
+ private fun checkSpokenWord(results:List<String>){
+  val target=expectedSpeechWord?:return
+  val wanted=normalizeSpeech(target)
+  val pattern=Regex("(^| )"+Regex.escape(wanted)+"($| )")
+  val ok=results.any{candidate->pattern.containsMatchIn(normalizeSpeech(candidate))}
+  if(ok){
+   stars+=1
+   speechStatus?.text="✅ Výborně! Řekl jsi „"+target+"“. ⭐"
+   Toast.makeText(this,"⭐ +1 hvězdička",Toast.LENGTH_SHORT).show()
+   say("Výborně")
+  }else{
+   val best=results.firstOrNull()?.trim().orEmpty()
+   speechStatus?.text=if(best.isBlank())"Nerozuměl jsem. Zkus slovo znovu." else "Slyšel jsem „"+best+"“. Zkus znovu: "+target+"."
+  }
+ }
+ private fun cancelListening(){try{speechRecognizer?.cancel()}catch(_:Exception){}}
+ override fun onRequestPermissionsResult(requestCode:Int,permissions:Array<out String>,grantResults:IntArray){
+  super.onRequestPermissionsResult(requestCode,permissions,grantResults)
+  if(requestCode==REQ_RECORD_AUDIO){
+   if(grantResults.isNotEmpty()&&grantResults[0]==PackageManager.PERMISSION_GRANTED)beginSpeechRecognition()
+   else speechStatus?.text="Bez povolení mikrofonu nemůžu poslouchat výslovnost."
+  }
+ }
  private fun schoolPrep(){base();text("🎓 Příprava do školy",30,true);text("Vyber si hru",22,true);bigBtn("📍 KDE TO JE?","na • pod • vedle • před • za",Color.rgb(91,155,213)){positionGame()};bigBtn("🔢 POČÍTÁNÍ","od 1 do 20",Color.rgb(245,166,35)){countGame()};bigBtn("↔️ PROTIKLADY","velký × malý",Color.rgb(139,101,207)){oppositesGame()};bigBtn("🧠 ROZUMÍM","pokyny a situace",Color.rgb(70,170,120)){instructionGame()};btn("🏠 Domů"){home()}}
  private fun positionGame(){val tasks=listOf("Míč je NA stole." to "na","Kočka je POD stolem." to "pod","Medvídek je VEDLE židle." to "vedle","Auto je PŘED domem." to "před","Pes je ZA domem." to "za","Kostka je V krabici." to "v","Židle je MEZI stoly." to "mezi");val t=tasks.random();base();text("Kde to je?",28,true);text(t.first,27,true);btn("🔊 Poslechni"){say(t.first)};listOf("na","pod","vedle","před","za","v","mezi").shuffled().take(4).let{xs->val opts=(xs+t.second).distinct().shuffled().take(4);opts.forEach{o->btn(o.uppercase()){if(o==t.second){stars++;say("Výborně");positionGame()}else say("Zkus to znovu")}}};btn("⌂ Domů"){home()}}
  private fun countGame(){val n=(1..20).random();val options=listOf(n,(n+1).coerceAtMost(20),(n-1).coerceAtLeast(1),(1..20).random()).distinct().shuffled();base();text("Počítání do 20",28,true);text("⭐ ".repeat(n),22);text("Kolik je hvězdiček?",22,true);options.forEach{o->btn(o.toString()){if(o==n){stars++;say("Výborně");countGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
@@ -132,5 +231,5 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun instructionGame(){val tasks=listOf("Co uděláš, když učitel řekne: Otevři knihu?" to "otevřu knihu","Co uděláš před přechodem přes silnici?" to "rozhlédnu se","Co řekneš, když o něco žádáš?" to "prosím","Co řekneš, když ti někdo pomůže?" to "děkuji","Kterou rukou ukazuješ doprava?" to "pravou");val t=tasks.random();val wrong=listOf("zavřu oči","uteču","nevím","nic neřeknu","otočím se");val choices=(wrong.shuffled().take(3)+t.second).shuffled();base();text("Rozumím pokynům",28,true);text(t.first,22,true);btn("🔊 Poslechni"){say(t.first)};choices.forEach{o->btn(o){if(o==t.second){stars++;say("Výborně");instructionGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
  private fun rewards(){base();text("Moje odměny",30,true);text("⭐ "+stars,42,true);val r=listOf(5 to "🎈 Balónek",10 to "🧢 Čepice",20 to "🧸 Plyšák",35 to "👓 Brýle",50 to "🏆 Zlatý pohár",100 to "👑 Koruna");r.forEach{(n,name)->text(if(stars>=n)"✅ "+name else "🔒 "+name+"  •  "+n+" ⭐",20)};btn("🎯  Získat hvězdičky"){worlds(true)};btn("⌂  Domů"){home()}}
  override fun onBackPressed(){home()}
- override fun onDestroy(){tts.stop();tts.shutdown();super.onDestroy()}
+ override fun onDestroy(){try{speechRecognizer?.cancel();speechRecognizer?.destroy();speechRecognizer=null}catch(_:Exception){};tts.stop();tts.shutdown();super.onDestroy()}
 }
