@@ -87,6 +87,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
  private val domecekImages=mapOf(
   "dům" to R.drawable.word_dum,
+  "panelák" to R.drawable.word_panelak,
   "pokoj" to R.drawable.word_pokoj,
   "postel" to R.drawable.word_postel,
   "polštář" to R.drawable.word_polstar,
