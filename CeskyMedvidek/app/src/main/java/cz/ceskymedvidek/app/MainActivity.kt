@@ -18,7 +18,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private val prefs by lazy{getSharedPreferences("medvidek",MODE_PRIVATE)}
  private var stars:Int get()=prefs.getInt("stars",0); set(v){prefs.edit().putInt("stars",v).apply()}
  private val vocabulary=mapOf(
- "Domeček" to listOf("dům","byt","pokoj","postel","polštář","deka","stůl","židle","okno","dveře"),
+ "Domeček" to listOf("dům","panelák","pokoj","postel","polštář","deka","stůl","židle","okno","dveře"),
  "Domácnost" to listOf("kuchyně","koupelna","ložnice","chodba","balkon","zahrada","garáž","střecha","zeď","podlaha","strop","schody","klíč","zámek","křeslo","police","koberec","zrcadlo","hodiny","obraz","záclona","peřina","ručník","mýdlo","kartáček","hřeben","vysavač","koště","lopatka","pračka","lednice","trouba","sporák","konvice","hrnek","talíř","lžíce"),
  "Zvířata" to listOf("pes","kočka","králík","křeček","morče","papoušek","ryba","želva","kůň","kráva","prase","ovce","koza","slepice","kohout","kachna","husa","krocan","osel","jelen","srna","liška","vlk","medvěd","ježek","veverka","zajíc","divočák","myš","krtek","lev","tygr","slon","žirafa","zebra","opice","gorila","klokan","panda","hroch","nosorožec","krokodýl","had","ještěrka","žába","čáp","sova","orel","tučňák","delfín"),
  "Jídlo" to listOf("chléb","rohlík","houska","máslo","sýr","šunka","salám","vejce","mléko","jogurt","tvaroh","smetana","polévka","maso","kuře","ryba","rýže","těstoviny","brambory","knedlík","omáčka","salát","pizza","hamburger","párek","kaše","mouka","cukr","sůl","pepř","med","džem","čokoláda","sušenka","dort","zmrzlina","bonbón","ořech","snídaně","oběd","večeře","svačina","voda","čaj","kakao","džus","limonáda","hlad","žízeň","chuť"),
@@ -87,7 +87,6 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
  private val domecekImages=mapOf(
   "dům" to R.drawable.word_dum,
-  "byt" to R.drawable.word_byt,
   "pokoj" to R.drawable.word_pokoj,
   "postel" to R.drawable.word_postel,
   "polštář" to R.drawable.word_polstar,
@@ -104,11 +103,11 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    root.addView(ImageView(this).apply{
     setImageResource(resId);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name;adjustViewBounds=true
    },LinearLayout.LayoutParams(520,520).apply{setMargins(8,12,8,12)})
-  }else text(x.icon,112)
+  }else if(x.world!="Domeček") text(x.icon,112)
  }
  private fun wordBtn(x:Word,a:()->Unit){
   val resId=drawableFor(x)
-  if(resId==null){btn(x.icon+"   "+x.name,a);return}
+  if(resId==null){btn(if(x.world=="Domeček") x.name else x.icon+"   "+x.name,a);return}
   val card=LinearLayout(this).apply{
    orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER
    background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))}
