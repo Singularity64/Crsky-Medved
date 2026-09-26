@@ -70,6 +70,20 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  override fun onInit(s:Int){if(s==TextToSpeech.SUCCESS){tts.language=Locale("cs","CZ");tts.setSpeechRate(.82f)}}
  private fun base(){root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_HORIZONTAL;setPadding(28,42,28,28);background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(220,246,255),Color.rgb(247,238,255)))};setContentView(ScrollView(this).apply{addView(root)})}
  private fun text(s:String,size:Int=22,bold:Boolean=false){root.addView(TextView(this).apply{text=s;textSize=size.toFloat();gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));if(bold)setTypeface(typeface,Typeface.BOLD);setPadding(8,10,8,10)})}
+ private fun bigBtn(title:String,subtitle:String,color:Int,a:()->Unit){
+  root.addView(Button(this).apply{
+   text=title+"\n"+subtitle
+   textSize=22f
+   setAllCaps(false)
+   gravity=Gravity.CENTER
+   setTextColor(Color.WHITE)
+   setTypeface(typeface,Typeface.BOLD)
+   background=GradientDrawable().apply{setColor(color);cornerRadius=42f}
+   setPadding(18,28,18,28)
+   minHeight=150
+   setOnClickListener{a()}
+  },LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,12,8,12)})
+ }
  private fun btn(s:String,a:()->Unit){root.addView(Button(this).apply{text=s;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100));background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))};setPadding(18,16,18,16);setOnClickListener{a()}},LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})}
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
  private fun showWordVisual(x:Word){
