@@ -22,9 +22,11 @@ object DomecekSprite {
     fun bitmapFor(word: String): Bitmap? {
         val index = words.indexOf(word)
         if (index < 0) return null
-        val cell = sheet.width / 5
-        val x = (index % 5) * cell
-        val y = (index / 5) * cell
-        return Bitmap.createBitmap(sheet, x, y, cell, cell)
+        val cellW = sheet.width / 5
+        val cellH = sheet.height / 5
+        val x = (index % 5) * cellW
+        val y = (index / 5) * cellH
+        if (x < 0 || y < 0 || x + cellW > sheet.width || y + cellH > sheet.height) return null
+        return Bitmap.createBitmap(sheet, x, y, cellW, cellH)
     }
 }
