@@ -4,10 +4,7 @@ import android.os.*
 import android.speech.tts.TextToSpeech
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.BitmapDrawable
 import android.view.*
 import android.view.animation.OvershootInterpolator
 import android.widget.*
@@ -21,7 +18,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private val prefs by lazy{getSharedPreferences("medvidek",MODE_PRIVATE)}
  private var stars:Int get()=prefs.getInt("stars",0); set(v){prefs.edit().putInt("stars",v).apply()}
  private val vocabulary=mapOf(
- "Domeček" to listOf("dům","byt","pokoj","postel","polštář","deka","stůl","židle","okno","dveře","lampa","skříň","pohovka","televize","telefon","kniha","hračka","míč","kočka","pes","jíst","pít","spát","sedět","stát"),
+ "Domeček" to listOf("dům","byt","pokoj","postel","polštář","deka","stůl","židle","okno","dveře"),
  "Domácnost" to listOf("kuchyně","koupelna","ložnice","chodba","balkon","zahrada","garáž","střecha","zeď","podlaha","strop","schody","klíč","zámek","křeslo","police","koberec","zrcadlo","hodiny","obraz","záclona","peřina","ručník","mýdlo","kartáček","hřeben","vysavač","koště","lopatka","pračka","lednice","trouba","sporák","konvice","hrnek","talíř","lžíce"),
  "Zvířata" to listOf("pes","kočka","králík","křeček","morče","papoušek","ryba","želva","kůň","kráva","prase","ovce","koza","slepice","kohout","kachna","husa","krocan","osel","jelen","srna","liška","vlk","medvěd","ježek","veverka","zajíc","divočák","myš","krtek","lev","tygr","slon","žirafa","zebra","opice","gorila","klokan","panda","hroch","nosorožec","krokodýl","had","ještěrka","žába","čáp","sova","orel","tučňák","delfín"),
  "Jídlo" to listOf("chléb","rohlík","houska","máslo","sýr","šunka","salám","vejce","mléko","jogurt","tvaroh","smetana","polévka","maso","kuře","ryba","rýže","těstoviny","brambory","knedlík","omáčka","salát","pizza","hamburger","párek","kaše","mouka","cukr","sůl","pepř","med","džem","čokoláda","sušenka","dort","zmrzlina","bonbón","ořech","snídaně","oběd","večeře","svačina","voda","čaj","kakao","džus","limonáda","hlad","žízeň","chuť"),
@@ -88,37 +85,39 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun btn(s:String,a:()->Unit){root.addView(Button(this).apply{text=s;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100));background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))};setPadding(18,16,18,16);setOnClickListener{a()}},LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})}
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
- private val domecekImageWords=listOf("dům","byt","pokoj","postel","polštář","deka","stůl","židle","okno","dveře","lampa","skříň","pohovka","televize","telefon","kniha","hračka","míč","kočka","pes","jíst","pít","spát","sedět","stát")
- private val homeSheet:Bitmap by lazy{BitmapFactory.decodeResource(resources,R.drawable.home_sprite)}
- private fun homeBitmapFor(word:String):Bitmap?{
-  val index=domecekImageWords.indexOf(word)
-  if(index<0)return null
-  return try{
-   val cols=5
-   val rows=5
-   val cellW=homeSheet.width/cols
-   val cellH=homeSheet.height/rows
-   val x=(index%cols)*cellW
-   val y=(index/cols)*cellH
-   if(cellW<=0||cellH<=0||x+cellW>homeSheet.width||y+cellH>homeSheet.height)null
-   else Bitmap.createBitmap(homeSheet,x,y,cellW,cellH)
-  }catch(e:Exception){null}
- }
+ private val domecekImages=mapOf(
+  "dům" to R.drawable.word_dum,
+  "byt" to R.drawable.word_byt,
+  "pokoj" to R.drawable.word_pokoj,
+  "postel" to R.drawable.word_postel,
+  "polštář" to R.drawable.word_polstar,
+  "deka" to R.drawable.word_deka,
+  "stůl" to R.drawable.word_stul,
+  "židle" to R.drawable.word_zidle,
+  "okno" to R.drawable.word_okno,
+  "dveře" to R.drawable.word_dvere
+ )
+ private fun drawableFor(x:Word):Int?=if(x.world=="Domeček")domecekImages[x.name]else null
  private fun showWordVisual(x:Word){
-  val bmp=if(x.world=="Domeček")homeBitmapFor(x.name)else null
-  if(bmp!=null){
-   root.addView(ImageView(this).apply{setImageBitmap(bmp);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name},LinearLayout.LayoutParams(520,420).apply{setMargins(8,12,8,12)})
+  val resId=drawableFor(x)
+  if(resId!=null){
+   root.addView(ImageView(this).apply{
+    setImageResource(resId);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name;adjustViewBounds=true
+   },LinearLayout.LayoutParams(520,520).apply{setMargins(8,12,8,12)})
   }else text(x.icon,112)
  }
  private fun wordBtn(x:Word,a:()->Unit){
-  val bmp=if(x.world=="Domeček")homeBitmapFor(x.name)else null
-  if(bmp==null){btn(x.icon+"   "+x.name,a);return}
-  root.addView(Button(this).apply{
-   text=x.name;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100))
+  val resId=drawableFor(x)
+  if(resId==null){btn(x.icon+"   "+x.name,a);return}
+  val card=LinearLayout(this).apply{
+   orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER
    background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))}
-   val d=BitmapDrawable(resources,bmp);d.setBounds(0,0,210,160);setCompoundDrawables(null,d,null,null);compoundDrawablePadding=8
-   setPadding(12,14,12,14);setOnClickListener{a()}
-  },LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
+   setPadding(12,12,12,14);setOnClickListener{a()}
+  }
+  card.addView(ImageView(this).apply{setImageResource(resId);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name},
+   LinearLayout.LayoutParams(-1,260))
+  card.addView(TextView(this).apply{text=x.name;textSize=20f;gravity=Gravity.CENTER;setTextColor(Color.rgb(25,55,100));setTypeface(typeface,Typeface.BOLD)})
+  root.addView(card,LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
  }
  private fun splash(){base();root.gravity=Gravity.CENTER;val b=TextView(this).apply{text="🧸";textSize=112f;gravity=Gravity.CENTER;alpha=0f;scaleX=.4f;scaleY=.4f};root.addView(b);text("Český medvídek",34,true);b.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700).setInterpolator(OvershootInterpolator());Handler(Looper.getMainLooper()).postDelayed({home()},2200)}
  private fun home(){base();root.setPadding(32,34,32,34);text("Český medvídek",34,true);text("🧸",88);text("Co si dnes dáme?",24,true);text("⭐ "+stars+"     🏆 "+(1+stars/20),18,true);bigBtn("📚 UČÍM SE","Obrázky • slova • poslech",Color.rgb(67,136,230)){worlds(false)};bigBtn("🎯 HRAJU SI","Najdi správný obrázek",Color.rgb(255,155,72)){worlds(true)};bigBtn("🎓 DO ŠKOLY","Počítání • pokyny • orientace",Color.rgb(89,180,120)){schoolPrep()};btn("🎁 Moje odměny"){rewards()}}
