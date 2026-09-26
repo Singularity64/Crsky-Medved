@@ -25,7 +25,9 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private lateinit var tts:TextToSpeech
  private var speechRecognizer:SpeechRecognizer?=null
  private var speechStatus:TextView?=null
+ private var speechNextButton:Button?=null
  private var expectedSpeechWord:String?=null
+ private var speechWordPassed=false
  private val prefs by lazy{getSharedPreferences("medvidek",MODE_PRIVATE)}
  private var stars:Int get()=prefs.getInt("stars",0); set(v){prefs.edit().putInt("stars",v).apply()}
  private val vocabulary=mapOf(
@@ -99,6 +101,14 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   },LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,12,8,12)})
  }
  private fun btn(s:String,a:()->Unit){root.addView(Button(this).apply{text=s;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100));background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))};setPadding(18,16,18,16);setOnClickListener{a()}},LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})}
+ private fun hiddenNextBtn(s:String,a:()->Unit){
+  speechNextButton=Button(this).apply{
+   text=s;textSize=20f;setAllCaps(false);setTextColor(Color.WHITE);setTypeface(typeface,Typeface.BOLD)
+   background=GradientDrawable().apply{setColor(Color.rgb(74,170,103));cornerRadius=32f}
+   setPadding(18,16,18,16);visibility=View.GONE;setOnClickListener{a()}
+  }
+  root.addView(speechNextButton,LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
+ }
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
  private val domecekImages=mapOf(
   "dům" to R.drawable.word_dum,
@@ -137,9 +147,9 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun splash(){base();root.gravity=Gravity.CENTER;val b=TextView(this).apply{text="🧸";textSize=112f;gravity=Gravity.CENTER;alpha=0f;scaleX=.4f;scaleY=.4f};root.addView(b);text("Český medvídek",34,true);b.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700).setInterpolator(OvershootInterpolator());Handler(Looper.getMainLooper()).postDelayed({home()},2200)}
  private fun home(){cancelListening();base();root.setPadding(32,34,32,34);text("Český medvídek",34,true);text("🧸",88);text("Co si dnes dáme?",24,true);text("⭐ "+stars+"     🏆 "+(1+stars/20),18,true);bigBtn("📚 UČÍM SE","Obrázky • slova • poslech",Color.rgb(67,136,230)){worlds(false)};bigBtn("🗣️ VÝSLOVNOST","Poslechni • zopakuj • mikrofon",Color.rgb(151,103,214)){listen()};bigBtn("🎯 HRAJU SI","Najdi správný obrázek",Color.rgb(255,155,72)){worlds(true)};bigBtn("🎓 DO ŠKOLY","Počítání • pokyny • orientace",Color.rgb(89,180,120)){schoolPrep()};btn("🎁 Moje odměny"){rewards()}}
  private fun worlds(q:Boolean){base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true);text(if(q)"Kde si chceš zahrát?" else "Co se chceš učit?",20);worldList.forEach{w->btn(w.second+"   "+w.first){if(q)quiz(w.first)else learn(w.first,0)}};btn("🏠 Domů"){home()}}
- private fun learn(world:String,i:Int){cancelListening();val ws=words.filter{it.world==world};val x=ws[i%ws.size];base();text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true);btn("🔊  Poslechni si"){say(x.name)};btn("🎤  Řekni slovo"){startListening(x.name)};speechInfo();btn("Další  ➜"){learn(world,i+1)};btn("🎯  Procvičit"){quiz(world)};btn("⌂  Domů"){home()}}
+ private fun learn(world:String,i:Int){cancelListening();speechWordPassed=false;speechNextButton=null;val ws=words.filter{it.world==world};val x=ws[i%ws.size];base();text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true);btn("🔊  Přehrát slovo"){say(x.name)};btn("🎤  Řekni slovo"){startListening(x.name)};speechInfo();hiddenNextBtn("Další  ➜"){learn(world,i+1)};btn("🎯  Procvičit"){quiz(world)};btn("⌂  Domů"){home()}}
  private fun quiz(world:String){val pool=words.filter{it.world==world};val target=pool.random();val choices=(pool.filter{it!=target}.shuffled().take(3)+target).shuffled();base();text("Najdi správný obrázek",25,true);text("Najdi: "+target.name,30,true);btn("🔊  Přehrát zadání"){say("Najdi "+target.name)};choices.forEach{c->wordBtn(c){if(c==target){stars+=1;say("Výborně");Toast.makeText(this,"⭐ +1 hvězdička",Toast.LENGTH_SHORT).show();quiz(world)}else{say("Zkus to ještě jednou");Toast.makeText(this,"Zkus to ještě jednou",Toast.LENGTH_SHORT).show()}}};btn("⌂  Domů"){home()}}
- private fun listen(){cancelListening();val x=words.random();base();text("🗣️ Výslovnost",27,true);showWordVisual(x);text(x.name,34,true);btn("🔊  Poslechni si"){say(x.name)};btn("🎤  Teď řekni slovo"){startListening(x.name)};speechInfo("Nejdřív si slovo poslechni, potom ho řekni do mikrofonu.");btn("Další slovo"){listen()};btn("⌂  Domů"){home()}}
+ private fun listen(){cancelListening();speechWordPassed=false;speechNextButton=null;val x=words.random();base();text("🗣️ Výslovnost",27,true);showWordVisual(x);text(x.name,34,true);btn("🔊  Přehrát slovo"){say(x.name)};btn("🎤  Teď řekni slovo"){startListening(x.name)};speechInfo("Nejdřív si slovo poslechni, potom ho řekni do mikrofonu.");hiddenNextBtn("Další slovo  ➜"){listen()};btn("⌂  Domů"){home()}}
  private fun startListening(word:String){
   expectedSpeechWord=word
   if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
@@ -207,9 +217,13 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   val pattern=Regex("(^| )"+Regex.escape(wanted)+"($| )")
   val ok=results.any{candidate->pattern.containsMatchIn(normalizeSpeech(candidate))}
   if(ok){
-   stars+=1
-   speechStatus?.text="✅ Výborně! Řekl jsi „"+target+"“. ⭐"
-   Toast.makeText(this,"⭐ +1 hvězdička",Toast.LENGTH_SHORT).show()
+   if(!speechWordPassed){
+    speechWordPassed=true
+    stars+=1
+    Toast.makeText(this,"⭐ +1 hvězdička",Toast.LENGTH_SHORT).show()
+   }
+   speechNextButton?.visibility=View.VISIBLE
+   speechStatus?.text="✅ Výborně! Teď můžeš pokračovat dál. ⭐"
    say("Výborně")
   }else{
    val best=results.firstOrNull()?.trim().orEmpty()
