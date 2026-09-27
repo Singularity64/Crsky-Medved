@@ -37,6 +37,18 @@ jobs:
           unzip -o /tmp/domecek_exact10.zip -d app/src/main/res/drawable-nodpi
           ls -lh app/src/main/res/drawable-nodpi/word_*.webp
 
+      - name: Install exact Berialo home
+        working-directory: CeskyMedvidek
+        run: |
+          set -e
+          mkdir -p app/src/main/res/drawable-nodpi
+          rm -f app/src/main/res/drawable-nodpi/berialo_home.webp
+          rm -f app/src/main/res/drawable-nodpi/berialo_map_bg.webp
+          cat homepack/chunk*.txt | base64 -d > app/src/main/res/drawable-nodpi/berialo_home.jpg
+          test -s app/src/main/res/drawable-nodpi/berialo_home.jpg
+          file app/src/main/res/drawable-nodpi/berialo_home.jpg
+          ls -lh app/src/main/res/drawable-nodpi/berialo_home.jpg
+
       - name: Build APK
         working-directory: CeskyMedvidek
         run: gradle assembleDebug
