@@ -15,6 +15,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
@@ -85,6 +86,53 @@ class TwinkleStarsView(context:Context,private val filled:Int,private val total:
   }
  }
  override fun onDetachedFromWindow(){animator.cancel();super.onDetachedFromWindow()}
+}
+
+
+class WorldIconView(context:Context,private val kind:String,private val accent:Int):View(context){
+ private val p=Paint(Paint.ANTI_ALIAS_FLAG)
+ private val d=resources.displayMetrics.density
+ override fun onDraw(c:Canvas){
+  super.onDraw(c)
+  val cx=width/2f; val cy=height/2f; val r=minOf(width,height)*.34f
+  p.style=Paint.Style.FILL; p.color=accent
+  c.drawCircle(cx,cy,r*1.42f,p)
+  p.color=Color.WHITE; p.style=Paint.Style.STROKE; p.strokeWidth=4f*d; p.strokeCap=Paint.Cap.ROUND; p.strokeJoin=Paint.Join.ROUND
+  when(kind){
+   "house"->{
+    val roof=Path().apply{moveTo(cx-r*.8f,cy-r*.15f);lineTo(cx,cy-r*.9f);lineTo(cx+r*.8f,cy-r*.15f)}
+    c.drawPath(roof,p)
+    c.drawRect(RectF(cx-r*.58f,cy-r*.15f,cx+r*.58f,cy+r*.72f),p)
+    c.drawRect(RectF(cx-r*.14f,cy+r*.25f,cx+r*.14f,cy+r*.72f),p)
+   }
+   "paw"->{
+    p.style=Paint.Style.FILL
+    c.drawOval(RectF(cx-r*.48f,cy-r*.08f,cx+r*.48f,cy+r*.62f),p)
+    val rr=r*.22f
+    c.drawCircle(cx-r*.56f,cy-r*.48f,rr,p);c.drawCircle(cx-r*.18f,cy-r*.68f,rr,p)
+    c.drawCircle(cx+r*.18f,cy-r*.68f,rr,p);c.drawCircle(cx+r*.56f,cy-r*.48f,rr,p)
+   }
+   "apple"->{
+    p.style=Paint.Style.FILL
+    c.drawCircle(cx-r*.24f,cy+r*.05f,r*.48f,p);c.drawCircle(cx+r*.24f,cy+r*.05f,r*.48f,p)
+    p.style=Paint.Style.STROKE;p.strokeWidth=4f*d
+    c.drawLine(cx,cy-r*.35f,cx+r*.12f,cy-r*.78f,p)
+    c.drawOval(RectF(cx+r*.08f,cy-r*.78f,cx+r*.48f,cy-r*.48f),p)
+   }
+   "palette"->{
+    p.style=Paint.Style.STROKE;p.strokeWidth=4f*d
+    c.drawOval(RectF(cx-r*.78f,cy-r*.62f,cx+r*.78f,cy+r*.62f),p)
+    p.style=Paint.Style.FILL
+    c.drawCircle(cx+r*.3f,cy+r*.23f,r*.18f,Paint(Paint.ANTI_ALIAS_FLAG).apply{color=accent})
+    val holes=listOf(-.38f to -.22f, -.08f to -.42f, .25f to -.34f)
+    holes.forEach{(x,y)->c.drawCircle(cx+r*x,cy+r*y,r*.11f,p)}
+   }
+   else->{
+    val cap=Path().apply{moveTo(cx-r*.9f,cy-r*.18f);lineTo(cx,cy-r*.62f);lineTo(cx+r*.9f,cy-r*.18f);lineTo(cx,cy+r*.26f);close()}
+    c.drawPath(cap,p);c.drawLine(cx-r*.48f,cy+r*.18f,cx-r*.48f,cy+r*.62f,p)
+   }
+  }
+ }
 }
 
 class MainActivity:Activity(),TextToSpeech.OnInitListener{
@@ -638,87 +686,117 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    contentDescription=null
   },FrameLayout.LayoutParams(-1,dp(1760)))
 
-  fun worldButton(world:String,top:Int,left:Boolean,locked:Boolean=false,click:()->Unit){
+  fun worldButton(world:String,kind:String,accent:Int,top:Int,left:Boolean,click:()->Unit){
    val card=LinearLayout(this).apply{
-    orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER
-    setPadding(dp(8),dp(8),dp(8),dp(9))
+    orientation=LinearLayout.HORIZONTAL
+    gravity=Gravity.CENTER_VERTICAL
+    setPadding(dp(12),dp(10),dp(12),dp(10))
     isClickable=true;isFocusable=true;contentDescription=world
-    background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(255,254,248),Color.rgb(250,242,222))).apply{
-     cornerRadius=dp(26).toFloat();setStroke(dp(2),Color.rgb(224,202,164))
+    background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+     intArrayOf(Color.rgb(255,254,247),Color.rgb(250,239,211))).apply{
+      cornerRadius=dp(28).toFloat()
+      setStroke(dp(2),Color.rgb(225,195,144))
     }
-    elevation=dp(8).toFloat();setOnClickListener{if(!locked)click()}
+    elevation=dp(10).toFloat()
+    setOnClickListener{click()}
    }
-   val circle=TextView(this).apply{
-    text=when(world){"Domeček"->"⌂";"Zvířata"->"●";"Jídlo"->"●";"Barvy a tvary"->"◆";else->"A"}
-    textSize=34f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(54,117,185))
-    background=GradientDrawable().apply{shape=GradientDrawable.OVAL;setColor(Color.rgb(235,247,255));setStroke(dp(3),Color.WHITE)}
+
+   card.addView(WorldIconView(this,kind,accent),LinearLayout.LayoutParams(dp(70),dp(70)))
+
+   val middle=LinearLayout(this).apply{
+    orientation=LinearLayout.VERTICAL
+    gravity=Gravity.CENTER_VERTICAL
+    setPadding(dp(10),0,dp(6),0)
    }
-   card.addView(circle,LinearLayout.LayoutParams(dp(88),dp(88)))
+   middle.addView(TextView(this).apply{
+    text=world
+    textSize=20f
+    setTypeface(typeface,Typeface.BOLD)
+    setTextColor(Color.rgb(69,43,26))
+    gravity=Gravity.START
+   },LinearLayout.LayoutParams(-1,dp(32)))
+   middle.addView(TwinkleStarsView(this,worldStars(world),5),
+    LinearLayout.LayoutParams(dp(155),dp(38)))
+   card.addView(middle,LinearLayout.LayoutParams(0,dp(78),1f))
+
    card.addView(TextView(this).apply{
-    text=world;textSize=18f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(66,38,24))
-   },LinearLayout.LayoutParams(-1,dp(34)))
-   if(locked){
-    card.addView(TextView(this).apply{text="🔒";textSize=24f;gravity=Gravity.CENTER},LinearLayout.LayoutParams(-1,dp(42)))
-   }else{
-    card.addView(TwinkleStarsView(this,worldStars(world),5),LinearLayout.LayoutParams(-1,dp(44)))
-   }
-   map.addView(card,FrameLayout.LayoutParams(dp(180),dp(185)).apply{
-    topMargin=dp(top);if(left)leftMargin=dp(20) else {gravity=Gravity.END;rightMargin=dp(20)}
+    text="›"
+    textSize=38f
+    gravity=Gravity.CENTER
+    setTypeface(typeface,Typeface.BOLD)
+    setTextColor(Color.rgb(127,91,56))
+   },LinearLayout.LayoutParams(dp(34),-1))
+
+   val w=dp(325)
+   val h=dp(104)
+   map.addView(card,FrameLayout.LayoutParams(w,h).apply{
+    topMargin=dp(top)
+    if(left) leftMargin=dp(18) else {gravity=Gravity.END;rightMargin=dp(18)}
    })
   }
 
-  worldButton("Domeček",170,true){worldHub("Domeček")}
-  worldButton("Zvířata",470,false){worldHub("Zvířata")}
-  worldButton("Jídlo",770,true){worldHub("Jídlo")}
-  worldButton("Barvy a tvary",1070,false){worldHub("Barvy a tvary")}
-  worldButton("Škola",1370,true){schoolPrep()}
+  worldButton("Domeček","house",Color.rgb(70,156,220),185,true){worldHub("Domeček")}
+  worldButton("Zvířata","paw",Color.rgb(89,181,92),475,false){worldHub("Zvířata")}
+  worldButton("Jídlo","apple",Color.rgb(230,81,68),765,true){worldHub("Jídlo")}
+  worldButton("Barvy a tvary","palette",Color.rgb(73,151,218),1055,false){worldHub("Barvy a tvary")}
+  worldButton("Škola","school",Color.rgb(132,93,207),1345,true){schoolPrep()}
 
   scroll.addView(map,ViewGroup.LayoutParams(-1,dp(1760)))
-  outer.addView(scroll,FrameLayout.LayoutParams(-1,-1).apply{bottomMargin=dp(92)})
+  outer.addView(scroll,FrameLayout.LayoutParams(-1,-1).apply{bottomMargin=dp(88);topMargin=dp(74)})
 
-  val topBar=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(10),dp(8),dp(10),dp(8))}
-  val counter=TextView(this).apply{
-   text="⭐ "+stars;textSize=19f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(76,43,25))
-   background=GradientDrawable().apply{setColor(Color.rgb(255,251,239));cornerRadius=dp(20).toFloat();setStroke(dp(2),Color.rgb(218,188,135))}
-   setPadding(dp(12),dp(8),dp(12),dp(8))
+  val topBar=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+   setPadding(dp(10),dp(8),dp(10),dp(8))
+   background=GradientDrawable().apply{setColor(Color.argb(230,255,250,238))}
   }
-  topBar.addView(counter,LinearLayout.LayoutParams(dp(92),dp(54)))
+  val counter=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
+   background=GradientDrawable().apply{setColor(Color.rgb(255,251,239));cornerRadius=dp(20).toFloat();setStroke(dp(2),Color.rgb(218,188,135))}
+   setPadding(dp(8),dp(4),dp(8),dp(4))
+  }
+  counter.addView(TwinkleStarsView(this,1,1),LinearLayout.LayoutParams(dp(36),dp(36)))
+  counter.addView(TextView(this).apply{text=stars.toString();textSize=19f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(76,43,25))},
+   LinearLayout.LayoutParams(dp(38),dp(36)))
+  topBar.addView(counter,LinearLayout.LayoutParams(dp(86),dp(50)))
   topBar.addView(Space(this),LinearLayout.LayoutParams(0,1,1f))
   val logo=TextView(this).apply{
-   text="Berialo";textSize=30f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(255,193,27))
-   setShadowLayer(5f,0f,2f,Color.rgb(95,47,20))
-   background=GradientDrawable().apply{setColor(Color.rgb(126,67,30));cornerRadius=dp(25).toFloat();setStroke(dp(2),Color.rgb(90,47,23))}
-   setPadding(dp(18),dp(6),dp(18),dp(6))
+   text="BERIALO";textSize=28f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(32,102,195));setShadowLayer(3f,0f,1f,Color.WHITE)
+   background=GradientDrawable().apply{setColor(Color.rgb(222,153,78));cornerRadius=dp(22).toFloat();setStroke(dp(2),Color.rgb(155,91,42))}
+   setPadding(dp(16),dp(4),dp(16),dp(4))
   }
-  topBar.addView(logo,LinearLayout.LayoutParams(dp(180),dp(58)))
+  topBar.addView(logo,LinearLayout.LayoutParams(dp(172),dp(52)))
   topBar.addView(Space(this),LinearLayout.LayoutParams(0,1,1f))
-  val settings=Button(this).apply{
-   text="⚙";textSize=24f;setAllCaps(false);setOnClickListener{profile()}
+  val settings=TextView(this).apply{
+   text="";contentDescription="Nastavení";isClickable=true;isFocusable=true
    background=GradientDrawable().apply{setColor(Color.rgb(255,252,244));shape=GradientDrawable.OVAL;setStroke(dp(2),Color.rgb(224,211,185))}
+   setOnClickListener{profile()}
   }
-  topBar.addView(settings,LinearLayout.LayoutParams(dp(54),dp(54)))
-  outer.addView(topBar,FrameLayout.LayoutParams(-1,dp(76),Gravity.TOP))
+  topBar.addView(settings,LinearLayout.LayoutParams(dp(50),dp(50)))
+  outer.addView(topBar,FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP))
 
   val nav=LinearLayout(this).apply{
    orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
-   setPadding(dp(5),dp(6),dp(5),dp(6))
-   background=GradientDrawable().apply{setColor(Color.rgb(255,252,244));cornerRadius=dp(28).toFloat();setStroke(dp(2),Color.rgb(231,210,171))}
+   setPadding(dp(5),dp(5),dp(5),dp(5))
+   background=GradientDrawable().apply{setColor(Color.rgb(255,252,244));cornerRadius=dp(26).toFloat();setStroke(dp(2),Color.rgb(231,210,171))}
    elevation=dp(12).toFloat()
   }
-  fun navButton(label:String,symbol:String,click:()->Unit){
-   val b=LinearLayout(this).apply{
-    orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;isClickable=true;isFocusable=true;setOnClickListener{click()}
+  fun navButton(label:String,click:()->Unit){
+   val b=TextView(this).apply{
+    text=label;textSize=12f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+    setTextColor(Color.rgb(66,40,27));isClickable=true;isFocusable=true
+    background=GradientDrawable().apply{setColor(Color.rgb(248,244,233));cornerRadius=dp(18).toFloat()}
+    setOnClickListener{click()}
    }
-   b.addView(TextView(this).apply{text=symbol;textSize=25f;gravity=Gravity.CENTER},LinearLayout.LayoutParams(-1,dp(40)))
-   b.addView(TextView(this).apply{text=label;textSize=11f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(66,40,27))},LinearLayout.LayoutParams(-1,dp(28)))
-   nav.addView(b,LinearLayout.LayoutParams(0,-1,1f))
+   nav.addView(b,LinearLayout.LayoutParams(0,-1,1f).apply{setMargins(dp(2),0,dp(2),0)})
   }
-  navButton("Učení","📖"){worlds(false)}
-  navButton("Výslovnost","●"){listen()}
-  navButton("Hra","🎮"){worlds(true)}
-  navButton("Odměny","🎁"){rewards()}
-  navButton("Profil","●"){profile()}
-  outer.addView(nav,FrameLayout.LayoutParams(-1,dp(88),Gravity.BOTTOM).apply{leftMargin=dp(5);rightMargin=dp(5);bottomMargin=dp(4)})
+  navButton("Učení"){worlds(false)}
+  navButton("Výslovnost"){listen()}
+  navButton("Hra"){worlds(true)}
+  navButton("Odměny"){rewards()}
+  navButton("Profil"){profile()}
+  outer.addView(nav,FrameLayout.LayoutParams(-1,dp(84),Gravity.BOTTOM).apply{leftMargin=dp(5);rightMargin=dp(5);bottomMargin=dp(3)})
+
   setContentView(outer)
  }
  private fun worlds(q:Boolean){
