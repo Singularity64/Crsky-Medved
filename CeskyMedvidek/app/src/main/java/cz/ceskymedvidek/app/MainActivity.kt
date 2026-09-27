@@ -1,6 +1,8 @@
 package cz.ceskymedvidek.app
 import android.Manifest
+import android.animation.ValueAnimator
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.*
@@ -9,7 +11,10 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.*
@@ -17,10 +22,69 @@ import android.view.animation.OvershootInterpolator
 import android.widget.*
 import java.text.Normalizer
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 data class Word(val name:String,val icon:String,val world:String)
 data class StickerReward(val key:String,val icon:String,val name:String)
 data class RewardGrant(val praise:String,val reward:StickerReward,val isNew:Boolean,val collectionCompleted:Boolean)
+
+class TwinkleStarsView(context:Context,private val filled:Int,private val total:Int=5):View(context){
+ private val density=resources.displayMetrics.density
+ private val onPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.rgb(255,193,7);style=Paint.Style.FILL}
+ private val offPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.rgb(205,207,216);style=Paint.Style.FILL}
+ private var phase=0f
+ private val animator=ValueAnimator.ofFloat(0f,1f).apply{
+  duration=1100
+  repeatCount=ValueAnimator.INFINITE
+  repeatMode=ValueAnimator.RESTART
+  addUpdateListener{phase=it.animatedValue as Float;invalidate()}
+ }
+ init{setLayerType(LAYER_TYPE_SOFTWARE,null);animator.start()}
+ private fun star(cx:Float,cy:Float,r:Float):Path{
+  val p=Path()
+  for(i in 0 until 10){
+   val a=-PI/2+i*PI/5
+   val rr=if(i%2==0)r else r*.46f
+   val x=cx+(cos(a)*rr).toFloat()
+   val y=cy+(sin(a)*rr).toFloat()
+   if(i==0)p.moveTo(x,y)else p.lineTo(x,y)
+  }
+  p.close();return p
+ }
+ override fun onMeasure(w:Int,h:Int){
+  val ww=(total*39*density).toInt()
+  val hh=(42*density).toInt()
+  setMeasuredDimension(resolveSize(ww,w),resolveSize(hh,h))
+ }
+ override fun onDraw(c:Canvas){
+  super.onDraw(c)
+  val step=width.toFloat()/total
+  val baseR=(16*density).coerceAtMost(height*.38f)
+  for(i in 0 until total){
+   val active=i<filled
+   val pulse=((sin((phase*2*PI)+(i*.9))+1.0)/2.0).toFloat()
+   val r=if(active)baseR*(.94f+.08f*pulse)else baseR*.9f
+   val paint=if(active)onPaint else offPaint
+   if(active){
+    paint.alpha=(210+45*pulse).toInt()
+    paint.setShadowLayer(7*density+4*density*pulse,0f,0f,Color.rgb(255,224,80))
+   }else{
+    paint.alpha=210
+    paint.clearShadowLayer()
+   }
+   c.drawPath(star(step*(i+.5f),height/2f,r),paint)
+   if(active&&pulse>.72f){
+    val sparkle=Paint(Paint.ANTI_ALIAS_FLAG).apply{color=Color.WHITE;alpha=(160*pulse).toInt()}
+    val x=step*(i+.5f)+r*.75f
+    val y=height/2f-r*.72f
+    c.drawCircle(x,y,2.2f*density,sparkle)
+   }
+  }
+ }
+ override fun onDetachedFromWindow(){animator.cancel();super.onDetachedFromWindow()}
+}
 
 class MainActivity:Activity(),TextToSpeech.OnInitListener{
  companion object{private const val REQ_RECORD_AUDIO=41}
@@ -193,10 +257,36 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   speechScreenActive=false
   resumeListeningAfterTts=null
   cancelListening()
-  root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_HORIZONTAL;setPadding(28,42,28,28);background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(220,246,255),Color.rgb(247,238,255)))}
-  setContentView(ScrollView(this).apply{addView(root)})
+  val frame=FrameLayout(this)
+  frame.addView(ImageView(this).apply{
+   setImageResource(R.drawable.berialo_map_bg)
+   scaleType=ImageView.ScaleType.CENTER_CROP
+   contentDescription=null
+  },FrameLayout.LayoutParams(-1,-1))
+  frame.addView(View(this).apply{setBackgroundColor(Color.argb(34,255,255,255))},FrameLayout.LayoutParams(-1,-1))
+  root=LinearLayout(this).apply{
+   orientation=LinearLayout.VERTICAL
+   gravity=Gravity.CENTER_HORIZONTAL
+   setPadding(22,34,22,42)
+   setBackgroundColor(Color.TRANSPARENT)
+  }
+  val scroll=ScrollView(this).apply{
+   isFillViewport=true
+   clipToPadding=false
+   addView(root,ViewGroup.LayoutParams(-1,-2))
+  }
+  frame.addView(scroll,FrameLayout.LayoutParams(-1,-1))
+  setContentView(frame)
  }
- private fun text(s:String,size:Int=22,bold:Boolean=false){root.addView(TextView(this).apply{text=s;textSize=size.toFloat();gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));if(bold)setTypeface(typeface,Typeface.BOLD);setPadding(8,10,8,10)})}
+ private fun text(s:String,size:Int=22,bold:Boolean=false){
+  root.addView(TextView(this).apply{
+   text=s;textSize=size.toFloat();gravity=Gravity.CENTER
+   setTextColor(Color.rgb(82,43,25))
+   setShadowLayer(5f,0f,2f,Color.WHITE)
+   if(bold)setTypeface(typeface,Typeface.BOLD)
+   setPadding(8,10,8,10)
+  })
+ }
  private fun speechInfo(s:String="🎤 Mikrofon je zapnutý. Řekni slovo."){
   speechStatus=TextView(this).apply{text=s;textSize=17f;gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));setPadding(8,8,8,12)}
   root.addView(speechStatus)
@@ -204,18 +294,31 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun bigBtn(title:String,subtitle:String,color:Int,a:()->Unit){
   root.addView(Button(this).apply{
    text=title+"\n"+subtitle
-   textSize=22f
+   textSize=21f
    setAllCaps(false)
    gravity=Gravity.CENTER
    setTextColor(Color.WHITE)
    setTypeface(typeface,Typeface.BOLD)
-   background=GradientDrawable().apply{setColor(color);cornerRadius=42f}
-   setPadding(18,28,18,28)
-   minHeight=150
+   background=GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,intArrayOf(color,Color.argb(255,
+    ((Color.red(color)+255)/2),((Color.green(color)+255)/2),((Color.blue(color)+255)/2)))).apply{
+     cornerRadius=44f;setStroke(3,Color.argb(215,255,255,255))
+   }
+   elevation=10f
+   setPadding(18,24,18,24)
+   minHeight=140
    setOnClickListener{a()}
-  },LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,12,8,12)})
+  },LinearLayout.LayoutParams(-1,-2).apply{setMargins(10,11,10,11)})
  }
- private fun btn(s:String,a:()->Unit){root.addView(Button(this).apply{text=s;textSize=20f;setAllCaps(false);setTextColor(Color.rgb(25,55,100));background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))};setPadding(18,16,18,16);setOnClickListener{a()}},LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})}
+ private fun btn(s:String,a:()->Unit){
+  root.addView(Button(this).apply{
+   text=s;textSize=19f;setAllCaps(false);setTextColor(Color.rgb(92,45,24));setTypeface(typeface,Typeface.BOLD)
+   background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.argb(246,255,253,244),Color.argb(246,255,242,218))).apply{
+    cornerRadius=34f;setStroke(2,Color.rgb(241,199,128))
+   }
+   elevation=8f
+   setPadding(18,17,18,17);setOnClickListener{a()}
+  },LinearLayout.LayoutParams(-1,-2).apply{setMargins(9,8,9,8)})
+ }
  private fun hiddenNextBtn(s:String,a:()->Unit){
   speechNextButton=Button(this).apply{
    text=s;textSize=20f;setAllCaps(false);setTextColor(Color.WHITE);setTypeface(typeface,Typeface.BOLD)
@@ -278,61 +381,125 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   val n=worldStars(world)
   return "★".repeat(n)+"☆".repeat(5-n)
  }
+ private fun logoPlaque(subtitle:String="Beriho dobrodružná mapa"){
+  val plaque=LinearLayout(this).apply{
+   orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER
+   setPadding(24,18,24,16)
+   background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(234,171,88),Color.rgb(190,109,46))).apply{
+    cornerRadius=42f;setStroke(4,Color.argb(235,255,247,220))
+   }
+   elevation=13f
+  }
+  plaque.addView(TextView(this).apply{
+   text="BERIALO";textSize=38f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(20,92,197));setShadowLayer(4f,0f,2f,Color.WHITE)
+  })
+  plaque.addView(TextView(this).apply{
+   text=subtitle;textSize=17f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(104,51,28))
+  })
+  root.addView(plaque,LinearLayout.LayoutParams(-1,-2).apply{setMargins(30,4,30,14)})
+ }
+ private fun statsPanel(){
+  val row=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
+   setPadding(15,9,15,9)
+   background=GradientDrawable().apply{setColor(Color.argb(238,255,250,234));cornerRadius=34f;setStroke(2,Color.rgb(241,199,128))}
+   elevation=7f
+  }
+  row.addView(TwinkleStarsView(this,1,1),LinearLayout.LayoutParams(54,54))
+  row.addView(TextView(this).apply{text=stars.toString();textSize=24f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(91,44,24));gravity=Gravity.CENTER})
+  row.addView(TextView(this).apply{text="     🎁 "+pendingChests;textSize=21f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(91,44,24));gravity=Gravity.CENTER})
+  root.addView(row,LinearLayout.LayoutParams(-2,-2).apply{setMargins(0,0,0,10)})
+ }
+ private fun navBar(){
+  val bar=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
+   setPadding(8,10,8,10)
+   background=GradientDrawable().apply{setColor(Color.argb(246,255,250,239));cornerRadius=38f;setStroke(2,Color.rgb(238,202,139))}
+   elevation=12f
+  }
+  fun add(icon:String,label:String,color:Int,click:()->Unit){
+   val item=LinearLayout(this).apply{
+    orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setPadding(4,7,4,7);setOnClickListener{click()}
+   }
+   item.addView(TextView(this).apply{
+    text=icon;textSize=28f;gravity=Gravity.CENTER
+    background=GradientDrawable().apply{setColor(color);shape=GradientDrawable.OVAL;setStroke(2,Color.WHITE)}
+    setPadding(10,7,10,7);elevation=7f
+   },LinearLayout.LayoutParams(58,58))
+   item.addView(TextView(this).apply{text=label;textSize=12f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(84,43,25))})
+   bar.addView(item,LinearLayout.LayoutParams(0,-2,1f))
+  }
+  add("📖","Učení",Color.rgb(255,191,45)){worlds(false)}
+  add("🎙","Výslovnost",Color.rgb(139,91,218)){listen()}
+  add("🎮","Hra",Color.rgb(80,190,80)){worlds(true)}
+  add("🎁","Odměny",Color.rgb(234,98,74)){rewards()}
+  add("🧸","Profil",Color.rgb(73,161,231)){profile()}
+  root.addView(bar,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,18,0,4)})
+ }
  private fun currentWorldIndex():Int{
   val i=worldList.indexOfFirst{worldStars(it.first)<5}
   return if(i<0)worldList.lastIndex else i
  }
  private fun worldMapCard(world:String,icon:String,index:Int,active:Boolean){
-  if(index>0)text("•   •   •",17)
-  if(active)text("🧸  Beri je tady",20,true)
-  val outer=LinearLayout(this).apply{
-   orientation=LinearLayout.HORIZONTAL
-   gravity=if(index%2==0)Gravity.START else Gravity.END
+  val holder=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+  if(active){
+   holder.addView(TextView(this).apply{
+    text="BERI JE TADY";textSize=13f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+    setTextColor(Color.WHITE)
+    background=GradientDrawable().apply{setColor(Color.rgb(247,151,35));cornerRadius=22f;setStroke(2,Color.WHITE)}
+    setPadding(13,5,13,5)
+    animate().alpha(.62f).setDuration(650).withEndAction{animate().alpha(1f).setDuration(650).start()}.start()
+   },LinearLayout.LayoutParams(-2,-2).apply{gravity=if(index%2==0)Gravity.START else Gravity.END;setMargins(20,2,20,2)})
   }
   val card=LinearLayout(this).apply{
-   orientation=LinearLayout.VERTICAL
-   gravity=Gravity.CENTER
-   setPadding(26,22,26,22)
-   background=GradientDrawable().apply{
-    setColor(if(active)Color.rgb(255,247,214) else Color.WHITE)
-    cornerRadius=38f
-    setStroke(if(active)4 else 2,if(active)Color.rgb(244,178,56) else Color.rgb(200,222,239))
+   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+   setPadding(14,12,14,12)
+   background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.argb(250,255,253,245),Color.argb(250,255,239,210))).apply{
+    cornerRadius=38f;setStroke(if(active)4 else 2,if(active)Color.rgb(255,187,40) else Color.rgb(238,205,149))
    }
-   elevation=8f
-   isClickable=true
+   elevation=if(active)14f else 8f
    setOnClickListener{worldHub(world)}
   }
   card.addView(TextView(this).apply{
-   text=icon;textSize=46f;gravity=Gravity.CENTER
+   text=icon;textSize=35f;gravity=Gravity.CENTER
+   background=GradientDrawable().apply{setColor(if(active)Color.rgb(255,223,96) else Color.rgb(238,248,255));shape=GradientDrawable.OVAL;setStroke(3,Color.WHITE)}
+   setPadding(8,6,8,6);elevation=6f
+  },LinearLayout.LayoutParams(64,64))
+  val middle=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(12,0,6,0)}
+  middle.addView(TextView(this).apply{
+   text=world;textSize=20f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(83,43,24))
   })
-  card.addView(TextView(this).apply{
-   text=world;textSize=22f;gravity=Gravity.CENTER;setTextColor(Color.rgb(28,58,104));setTypeface(typeface,Typeface.BOLD)
+  middle.addView(TwinkleStarsView(this,worldStars(world)),LinearLayout.LayoutParams(-1,48))
+  middle.addView(TextView(this).apply{
+   text=if(worldStars(world)==5)"Dokončeno" else "Úroveň "+worldStars(world)+" / 5"
+   textSize=12f;setTextColor(Color.rgb(120,84,61))
   })
-  card.addView(TextView(this).apply{
-   text=starsRow(world);textSize=24f;gravity=Gravity.CENTER
-   setTextColor(Color.rgb(238,169,38))
-  })
-  card.addView(TextView(this).apply{
-   text=if(worldStars(world)==5)"Hotovo" else "Úroveň "+worldStars(world)+" z 5"
-   textSize=14f;gravity=Gravity.CENTER;setTextColor(Color.rgb(92,113,143))
-  })
-  outer.addView(card,LinearLayout.LayoutParams(0,-2,.78f))
-  root.addView(outer,LinearLayout.LayoutParams(-1,-2).apply{setMargins(4,6,4,6)})
- }
- private fun worldHub(world:String){
+  card.addView(middle,LinearLayout.LayoutParams(0,-2,1f))
+  card.addView(TextView(this).apply{text="›";textSize=38f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(141,83,48));gravity=Gravity.CENTER},LinearLayout.LayoutParams(38,-1))
+  holder.addView(card,LinearLayout.LayoutParams(-1,-2))
+  val outer=LinearLayout(this).apply{gravity=if(index%2==0)Gravity.START else Gravity.END}
+  outer.addView(holder,LinearLayout.LayoutParams(0,-2,.90f))
+  root.addView(outer,LinearLayout.LayoutParams(-1,-2).apply{setMargins(if(index%2==0)2 else 32,7,if(index%2==0)32 else 2,7)})
+ } private fun worldHub(world:String){
   base()
-  val icon=worldIcons[world]?:"⭐"
-  text("Berialo",22,true)
-  text(icon,74)
-  text(world,32,true)
-  text(starsRow(world),30,true)
-  text("Beri tě provede tímto světem.",18)
-  bigBtn("📚 UČENÍ","Obrázek • slovo • poslech",Color.rgb(67,136,230)){learn(world,0)}
-  bigBtn("🗣️ VÝSLOVNOST","Poslech • mikrofon • odměna",Color.rgb(151,103,214)){listenWorld(world)}
-  bigBtn("🎯 HRA","Najdi správnou odpověď",Color.rgb(255,155,72)){quiz(world)}
-  btn("🗺️  Zpět na mapu"){home()}
- }
- private val domecekImages=mapOf(
+  logoPlaque("Svět "+world)
+  val icon=worldIcons[world]?:"•"
+  val head=LinearLayout(this).apply{
+   orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setPadding(18,16,18,16)
+   background=GradientDrawable().apply{setColor(Color.argb(242,255,250,235));cornerRadius=38f;setStroke(3,Color.rgb(244,193,96))}
+   elevation=10f
+  }
+  head.addView(TextView(this).apply{text=icon;textSize=62f;gravity=Gravity.CENTER})
+  head.addView(TextView(this).apply{text=world;textSize=29f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(82,43,25))})
+  head.addView(TwinkleStarsView(this,worldStars(world)),LinearLayout.LayoutParams(-1,54))
+  root.addView(head,LinearLayout.LayoutParams(-1,-2).apply{setMargins(16,4,16,16)})
+  bigBtn("📖 UČENÍ","Obrázky • slova • poslech",Color.rgb(255,178,43)){learn(world,0)}
+  bigBtn("🎙 VÝSLOVNOST","Řekni slovo správně",Color.rgb(139,91,218)){listenWorld(world)}
+  bigBtn("🎮 HRA","Najdi správnou odpověď",Color.rgb(73,184,78)){quiz(world)}
+  btn("🗺  Zpět na mapu"){home()}
+ } private val domecekImages=mapOf(
   "dům" to R.drawable.word_dum,
   "panelák" to R.drawable.word_panelak,
   "pokoj" to R.drawable.word_pokoj,
@@ -377,23 +544,16 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun home(){
   base()
-  root.setPadding(26,28,26,34)
-  text("BERIALO",34,true)
-  text("🧸 Beriho dobrodružná mapa",20,true)
-  text("⭐ "+stars+"     🎁 "+stickerRewards.sumOf{stickerCount(it.key)}+"     🧰 "+pendingChests,18,true)
+  root.setPadding(18,24,18,36)
+  logoPlaque()
+  statsPanel()
   if(pendingChests>0){
-   bigBtn("🎁 BERI NAŠEL TRUHLU","Otevři poklad na mapě",Color.rgb(244,174,48)){treasureHunt()}
-  }else{
-   text("Získej další hvězdu ve světě a Beri najde novou truhlu.",16)
+   bigBtn("🎁 BERI NAŠEL TRUHLU","Otevři poklad na mapě",Color.rgb(245,161,36)){treasureHunt()}
   }
-  text("Vyber svět a pokračuj po cestě.",17)
   val active=currentWorldIndex()
   worldList.forEachIndexed{index,w->worldMapCard(w.first,w.second,index,index==active)}
-  btn("🎓  Beriho školní hry"){schoolPrep()}
-  btn("🎁  Sbírka odměn"){rewards()}
-  btn("👤  Profil dítěte"){profile()}
- }
- private fun worlds(q:Boolean){
+  navBar()
+ } private fun worlds(q:Boolean){
   base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true)
   worldList.forEach{w->btn(w.second+"   "+w.first+"   "+starsRow(w.first)){if(q)quiz(w.first)else learn(w.first,0)}}
   btn("🗺️ Mapa"){home()}
