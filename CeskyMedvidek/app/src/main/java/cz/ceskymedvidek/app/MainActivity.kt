@@ -61,6 +61,58 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   StickerReward("jednorozec","🦄","Jednorožec"),
   StickerReward("darek","🎁","Dárek")
  )
+ private val adventureTreasures=listOf(
+  StickerReward("auto","🏎️","Závodní auto"),
+  StickerReward("robot","🤖","Robot"),
+  StickerReward("dino","🦖","Dinosaurus"),
+  StickerReward("raketa2","🚀","Raketa"),
+  StickerReward("pirat","🏴‍☠️","Pirátský poklad"),
+  StickerReward("stit","🛡️","Hrdinský štít")
+ )
+ private val magicTreasures=listOf(
+  StickerReward("jednorozec2","🦄","Jednorožec"),
+  StickerReward("korunka2","👑","Korunka"),
+  StickerReward("hvezdna_hulka","🪄","Kouzelná hůlka"),
+  StickerReward("motyl","🦋","Kouzelný motýl"),
+  StickerReward("diamant","💎","Diamant"),
+  StickerReward("duha2","🌈","Duhový poklad")
+ )
+ private val animalTreasures=listOf(
+  StickerReward("panda","🐼","Panda"),
+  StickerReward("lev","🦁","Lev"),
+  StickerReward("lisak","🦊","Lišák"),
+  StickerReward("delfin","🐬","Delfín"),
+  StickerReward("pejsek","🐶","Pejsek"),
+  StickerReward("tucnak","🐧","Tučňák")
+ )
+ private val creativeTreasures=listOf(
+  StickerReward("paleta","🎨","Malířská paleta"),
+  StickerReward("kytara","🎸","Kytara"),
+  StickerReward("puzzle","🧩","Puzzle"),
+  StickerReward("kniha","📚","Kouzelná kniha"),
+  StickerReward("mic","⚽","Míč"),
+  StickerReward("foto","📸","Fotoaparát")
+ )
+ private var pendingChests:Int
+  get()=prefs.getInt("pending_chests",0)
+  set(v){prefs.edit().putInt("pending_chests",v.coerceAtLeast(0)).apply()}
+ private fun childProfile()=prefs.getString("child_profile","neutral")?:"neutral"
+ private fun rewardTheme()=prefs.getString("reward_theme","")?:""
+ private fun treasurePool():List<StickerReward>{
+  return when(rewardTheme()){
+   "adventure"->adventureTreasures
+   "magic"->magicTreasures
+   "animals"->animalTreasures
+   "creative"->creativeTreasures
+   else->when(childProfile()){
+    "boy"->adventureTreasures
+    "girl"->magicTreasures
+    else->animalTreasures
+   }
+  }
+ }
+ private fun treasureCount(key:String)=prefs.getInt("treasure_"+key,0)
+ private fun vocabularyTreasureCount():Int=(adventureTreasures+magicTreasures+animalTreasures+creativeTreasures).distinctBy{it.key}.sumOf{treasureCount(it.key)}
  private val vocabulary=mapOf(
  "Domeček" to listOf("dům","panelák","pokoj","postel","polštář","deka","stůl","židle","okno","dveře"),
  "Domácnost" to listOf("kuchyně","koupelna","ložnice","chodba","balkon","zahrada","garáž","střecha","zeď","podlaha","strop","schody","klíč","zámek","křeslo","police","koberec","zrcadlo","hodiny","obraz","záclona","peřina","ručník","mýdlo","kartáček","hřeben","vysavač","koště","lopatka","pračka","lednice","trouba","sporák","konvice","hrnek","talíř","lžíce"),
@@ -213,8 +265,14 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun worldProgress(world:String)=prefs.getInt("world_progress_"+worldKey(world),0)
  private fun worldStars(world:String):Int=(1+worldProgress(world)/4).coerceIn(1,5)
  private fun addWorldProgress(world:String){
+  val before=worldStars(world)
   val key="world_progress_"+worldKey(world)
   prefs.edit().putInt(key,worldProgress(world)+1).apply()
+  val after=worldStars(world)
+  if(after>before){
+   pendingChests+=after-before
+   prefs.edit().putString("last_chest_world",world).apply()
+  }
  }
  private fun starsRow(world:String):String{
   val n=worldStars(world)
@@ -322,12 +380,18 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   root.setPadding(26,28,26,34)
   text("BERIALO",34,true)
   text("🧸 Beriho dobrodružná mapa",20,true)
-  text("⭐ "+stars+"     🎁 "+stickerRewards.sumOf{stickerCount(it.key)},18,true)
+  text("⭐ "+stars+"     🎁 "+stickerRewards.sumOf{stickerCount(it.key)}+"     🧰 "+pendingChests,18,true)
+  if(pendingChests>0){
+   bigBtn("🎁 BERI NAŠEL TRUHLU","Otevři poklad na mapě",Color.rgb(244,174,48)){treasureHunt()}
+  }else{
+   text("Získej další hvězdu ve světě a Beri najde novou truhlu.",16)
+  }
   text("Vyber svět a pokračuj po cestě.",17)
   val active=currentWorldIndex()
   worldList.forEachIndexed{index,w->worldMapCard(w.first,w.second,index,index==active)}
   btn("🎓  Beriho školní hry"){schoolPrep()}
-  btn("🎁  Moje odměny"){rewards()}
+  btn("🎁  Sbírka odměn"){rewards()}
+  btn("👤  Profil dítěte"){profile()}
  }
  private fun worlds(q:Boolean){
   base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true)
@@ -456,20 +520,71 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun countGame(){val n=(1..20).random();val options=listOf(n,(n+1).coerceAtMost(20),(n-1).coerceAtLeast(1),(1..20).random()).distinct().shuffled();base();text("Počítání do 20",28,true);text("⭐ ".repeat(n),22);text("Kolik je hvězdiček?",22,true);options.forEach{o->btn(o.toString()){if(o==n){awardSuccess("Škola");countGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
  private fun oppositesGame(){val pairs=listOf("velký" to "malý","rychlý" to "pomalý","teplý" to "studený","nahoře" to "dole","den" to "noc","plný" to "prázdný","otevřený" to "zavřený","veselý" to "smutný","dlouhý" to "krátký","čistý" to "špinavý");val p=pairs.random();val choices=(pairs.flatMap{listOf(it.first,it.second)}.filter{it!=p.first}.shuffled().take(3)+p.second).shuffled();base();text("Najdi protiklad",28,true);text(p.first.uppercase(),32,true);choices.forEach{o->btn(o){if(o==p.second){awardSuccess("Škola");oppositesGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
  private fun instructionGame(){val tasks=listOf("Co uděláš, když učitel řekne: Otevři knihu?" to "otevřu knihu","Co uděláš před přechodem přes silnici?" to "rozhlédnu se","Co řekneš, když o něco žádáš?" to "prosím","Co řekneš, když ti někdo pomůže?" to "děkuji","Kterou rukou ukazuješ doprava?" to "pravou");val t=tasks.random();val wrong=listOf("zavřu oči","uteču","nevím","nic neřeknu","otočím se");val choices=(wrong.shuffled().take(3)+t.second).shuffled();base();text("Rozumím pokynům",28,true);text(t.first,22,true);btn("🔊 Poslechni"){say(t.first)};choices.forEach{o->btn(o){if(o==t.second){awardSuccess("Škola");instructionGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
+ private fun treasureHunt(){
+  base()
+  val place=prefs.getString("last_chest_world","na cestě")?:"na cestě"
+  text("🗺️ Beri našel poklad!",30,true)
+  text("🧸",82)
+  text("Truhla čeká ve světě: "+place,19,true)
+  text("🎁",110)
+  if(pendingChests>0){
+   bigBtn("🔓 OTEVŘÍT TRUHLU","Zjisti, co Beri našel",Color.rgb(244,174,48)){openTreasure()}
+  }else text("Teď žádná truhla nečeká. Získej další hvězdu.",18)
+  btn("🗺️  Zpět na mapu"){home()}
+ }
+ private fun openTreasure(){
+  if(pendingChests<=0){home();return}
+  val reward=treasurePool().random()
+  val old=treasureCount(reward.key)
+  prefs.edit().putInt("treasure_"+reward.key,old+1).apply()
+  pendingChests-=1
+  base()
+  text(if(old==0)"✨ NOVÝ POKLAD!" else "🎁 DALŠÍ POKLAD!",30,true)
+  text(reward.icon,116)
+  text(reward.name,30,true)
+  text("Beri ho přidal do tvé sbírky.",19)
+  say("Beri našel "+reward.name+". Skvělá práce!")
+  if(pendingChests>0)bigBtn("🎁 OTEVŘÍT DALŠÍ","Ještě jedna truhla čeká",Color.rgb(244,174,48)){treasureHunt()}
+  btn("🎁  Moje sbírka"){rewards()}
+  btn("🗺️  Mapa"){home()}
+ }
+ private fun profile(){
+  base()
+  text("👤 Profil dítěte",30,true)
+  text("Kdo si dnes hraje s Berim?",18)
+  val p=childProfile()
+  btn((if(p=="boy")"✅ " else "")+"👦 Kluk"){prefs.edit().putString("child_profile","boy").apply();profile()}
+  btn((if(p=="girl")"✅ " else "")+"👧 Holka"){prefs.edit().putString("child_profile","girl").apply();profile()}
+  btn((if(p=="neutral")"✅ " else "")+"🧒 Nechci řešit"){prefs.edit().putString("child_profile","neutral").apply();profile()}
+  text("Co má dítě nejraději?",22,true)
+  text("Tohle má větší vliv na poklady než samotná volba kluk/holka.",15)
+  val theme=rewardTheme()
+  btn((if(theme=="adventure")"✅ " else "")+"🏎️ Dobrodružství"){prefs.edit().putString("reward_theme","adventure").apply();profile()}
+  btn((if(theme=="magic")"✅ " else "")+"🦄 Kouzelný svět"){prefs.edit().putString("reward_theme","magic").apply();profile()}
+  btn((if(theme=="animals")"✅ " else "")+"🐾 Zvířata"){prefs.edit().putString("reward_theme","animals").apply();profile()}
+  btn((if(theme=="creative")"✅ " else "")+"🎨 Tvoření a hry"){prefs.edit().putString("reward_theme","creative").apply();profile()}
+  btn("🧹 Nechat Beriho vybrat"){prefs.edit().remove("reward_theme").apply();profile()}
+  btn("🗺️  Zpět na mapu"){home()}
+ }
  private fun rewards(){
   base()
-  text("🎁 Moje odměny",30,true)
+  text("🎁 Beriho sbírka",30,true)
   text("⭐ "+stars,42,true)
   val collected=stickerRewards.count{stickerCount(it.key)>0}
   text("Samolepky "+collected+" / "+stickerRewards.size,22,true)
   stickerRewards.forEach{r->
    val count=stickerCount(r.key)
-   text(if(count>0)r.icon+"  "+r.name+"  × "+count else "🔒  "+r.name,20)
+   text(if(count>0)r.icon+"  "+r.name+"  × "+count else "🔒  "+r.name,19)
   }
-  if(collected==stickerRewards.size)text("👑 Celá sbírka hotová! Bonus +10 ⭐",20,true)
-  else text("Nasbírej všech 10 různých samolepek a dostaneš bonus +10 ⭐.",17)
-  btn("🎯  Získat další odměnu"){worlds(true)}
-  btn("⌂  Domů"){home()}
+  text("🧰 Poklady z mapy",24,true)
+  val pool=(adventureTreasures+magicTreasures+animalTreasures+creativeTreasures).distinctBy{it.key}
+  val found=pool.count{treasureCount(it.key)>0}
+  text("Nalezeno "+found+" různých pokladů • celkem "+vocabularyTreasureCount(),17)
+  pool.filter{treasureCount(it.key)>0}.forEach{r->text(r.icon+"  "+r.name+"  × "+treasureCount(r.key),19)}
+  if(found==0)text("Zatím žádný poklad. Nová hvězda ve světě odemkne truhlu.",17)
+  if(pendingChests>0)bigBtn("🎁 OTEVŘÍT TRUHLU","Čeká jich: "+pendingChests,Color.rgb(244,174,48)){treasureHunt()}
+  btn("👤  Upravit profil a zájmy"){profile()}
+  btn("🗺️  Zpět na mapu"){home()}
  }
  override fun onBackPressed(){home()}
  override fun onDestroy(){try{speechRecognizer?.cancel();speechRecognizer?.destroy();speechRecognizer=null}catch(_:Exception){};tts.stop();tts.shutdown();super.onDestroy()}
