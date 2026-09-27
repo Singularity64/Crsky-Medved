@@ -135,6 +135,89 @@ class WorldIconView(context:Context,private val kind:String,private val accent:I
  }
 }
 
+
+class BottomNavIconView(context:Context,private val kind:String):View(context){
+ private val p=Paint(Paint.ANTI_ALIAS_FLAG)
+ private val d=resources.displayMetrics.density
+ private fun stroke(color:Int,w:Float=3.2f){p.style=Paint.Style.STROKE;p.strokeWidth=w*d;p.strokeCap=Paint.Cap.ROUND;p.strokeJoin=Paint.Join.ROUND;p.color=color}
+ private fun fill(color:Int){p.style=Paint.Style.FILL;p.color=color}
+ override fun onDraw(c:Canvas){
+  super.onDraw(c)
+  val cx=width/2f
+  val cy=height/2f
+  val r=minOf(width,height)*.34f
+  when(kind){
+   "book"->{
+    fill(Color.rgb(255,183,46))
+    val left=Path().apply{
+     moveTo(cx-r*.95f,cy-r*.62f);quadTo(cx-r*.45f,cy-r*.76f,cx-r*.08f,cy-r*.42f)
+     lineTo(cx-r*.08f,cy+r*.68f);quadTo(cx-r*.48f,cy+r*.42f,cx-r*.95f,cy+r*.55f);close()
+    }
+    val right=Path().apply{
+     moveTo(cx+r*.95f,cy-r*.62f);quadTo(cx+r*.45f,cy-r*.76f,cx+r*.08f,cy-r*.42f)
+     lineTo(cx+r*.08f,cy+r*.68f);quadTo(cx+r*.48f,cy+r*.42f,cx+r*.95f,cy+r*.55f);close()
+    }
+    c.drawPath(left,p);c.drawPath(right,p)
+    stroke(Color.WHITE,2.7f);c.drawLine(cx,cy-r*.42f,cx,cy+r*.66f,p)
+    c.drawLine(cx-r*.72f,cy-r*.20f,cx-r*.25f,cy-r*.10f,p)
+    c.drawLine(cx+r*.72f,cy-r*.20f,cx+r*.25f,cy-r*.10f,p)
+   }
+   "mic"->{
+    fill(Color.rgb(139,91,218))
+    c.drawRoundRect(RectF(cx-r*.34f,cy-r*.82f,cx+r*.34f,cy+r*.18f),r*.30f,r*.30f,p)
+    stroke(Color.rgb(139,91,218),3.2f)
+    c.drawArc(RectF(cx-r*.62f,cy-r*.10f,cx+r*.62f,cy+r*.62f),0f,180f,false,p)
+    c.drawLine(cx,cy+r*.60f,cx,cy+r*.92f,p)
+    c.drawLine(cx-r*.34f,cy+r*.92f,cx+r*.34f,cy+r*.92f,p)
+   }
+   "game"->{
+    fill(Color.rgb(74,184,78))
+    val body=Path().apply{
+     moveTo(cx-r*.75f,cy-r*.30f);quadTo(cx-r*.98f,cy+r*.12f,cx-r*.70f,cy+r*.55f)
+     quadTo(cx-r*.48f,cy+r*.78f,cx-r*.20f,cy+r*.42f)
+     lineTo(cx+r*.20f,cy+r*.42f)
+     quadTo(cx+r*.48f,cy+r*.78f,cx+r*.70f,cy+r*.55f)
+     quadTo(cx+r*.98f,cy+r*.12f,cx+r*.75f,cy-r*.30f)
+     quadTo(cx+r*.45f,cy-r*.55f,cx,cy-r*.45f)
+     quadTo(cx-r*.45f,cy-r*.55f,cx-r*.75f,cy-r*.30f);close()
+    }
+    c.drawPath(body,p)
+    stroke(Color.WHITE,2.7f)
+    c.drawLine(cx-r*.48f,cy-r*.02f,cx-r*.18f,cy-r*.02f,p)
+    c.drawLine(cx-r*.33f,cy-r*.17f,cx-r*.33f,cy+r*.13f,p)
+    fill(Color.WHITE);c.drawCircle(cx+r*.33f,cy-r*.08f,r*.10f,p);c.drawCircle(cx+r*.55f,cy+r*.10f,r*.10f,p)
+   }
+   "chest"->{
+    fill(Color.rgb(177,91,43))
+    c.drawRoundRect(RectF(cx-r*.78f,cy-r*.05f,cx+r*.78f,cy+r*.64f),r*.12f,r*.12f,p)
+    fill(Color.rgb(214,56,64))
+    c.drawRoundRect(RectF(cx-r*.72f,cy-r*.55f,cx+r*.72f,cy+r*.06f),r*.34f,r*.34f,p)
+    fill(Color.rgb(255,193,7))
+    c.drawRect(RectF(cx-r*.12f,cy-r*.55f,cx+r*.12f,cy+r*.64f),p)
+    c.drawRoundRect(RectF(cx-r*.22f,cy+r*.10f,cx+r*.22f,cy+r*.38f),r*.08f,r*.08f,p)
+    fill(Color.WHITE)
+    val star=Path()
+    for(i in 0 until 10){
+      val a=-Math.PI/2+i*Math.PI/5
+      val rr=if(i%2==0)r*.12f else r*.05f
+      val x=cx+(kotlin.math.cos(a)*rr).toFloat(); val y=cy+r*.24f+(kotlin.math.sin(a)*rr).toFloat()
+      if(i==0)star.moveTo(x,y) else star.lineTo(x,y)
+    }
+    star.close();c.drawPath(star,p)
+   }
+   else->{
+    fill(Color.rgb(185,132,78))
+    c.drawCircle(cx-r*.55f,cy-r*.45f,r*.32f,p);c.drawCircle(cx+r*.55f,cy-r*.45f,r*.32f,p)
+    c.drawCircle(cx,cy,r*.78f,p)
+    fill(Color.rgb(235,190,137));c.drawOval(RectF(cx-r*.42f,cy+r*.06f,cx+r*.42f,cy+r*.55f),p)
+    fill(Color.rgb(70,45,31));c.drawCircle(cx-r*.26f,cy-r*.10f,r*.08f,p);c.drawCircle(cx+r*.26f,cy-r*.10f,r*.08f,p)
+    c.drawOval(RectF(cx-r*.10f,cy+r*.12f,cx+r*.10f,cy+r*.28f),p)
+    stroke(Color.rgb(70,45,31),2.2f);c.drawArc(RectF(cx-r*.20f,cy+r*.18f,cx+r*.20f,cy+r*.42f),5f,170f,false,p)
+   }
+  }
+ }
+}
+
 class MainActivity:Activity(),TextToSpeech.OnInitListener{
  companion object{private const val REQ_RECORD_AUDIO=41}
  private lateinit var root:LinearLayout
@@ -777,25 +860,36 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
 
   val nav=LinearLayout(this).apply{
    orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
-   setPadding(dp(5),dp(5),dp(5),dp(5))
-   background=GradientDrawable().apply{setColor(Color.rgb(255,252,244));cornerRadius=dp(26).toFloat();setStroke(dp(2),Color.rgb(231,210,171))}
+   setPadding(dp(4),dp(4),dp(4),dp(4))
+   background=GradientDrawable().apply{
+    setColor(Color.rgb(255,252,244));cornerRadius=dp(28).toFloat();setStroke(dp(2),Color.rgb(231,210,171))
+   }
    elevation=dp(12).toFloat()
   }
-  fun navButton(label:String,click:()->Unit){
-   val b=TextView(this).apply{
-    text=label;textSize=12f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
-    setTextColor(Color.rgb(66,40,27));isClickable=true;isFocusable=true
-    background=GradientDrawable().apply{setColor(Color.rgb(248,244,233));cornerRadius=dp(18).toFloat()}
+  fun navButton(label:String,kind:String,click:()->Unit){
+   val b=LinearLayout(this).apply{
+    orientation=LinearLayout.VERTICAL
+    gravity=Gravity.CENTER
+    isClickable=true;isFocusable=true
+    setPadding(0,dp(2),0,dp(1))
     setOnClickListener{click()}
    }
-   nav.addView(b,LinearLayout.LayoutParams(0,-1,1f).apply{setMargins(dp(2),0,dp(2),0)})
+   b.addView(BottomNavIconView(this,kind),LinearLayout.LayoutParams(dp(44),dp(44)))
+   b.addView(TextView(this).apply{
+    text=label;textSize=10.5f;gravity=Gravity.CENTER
+    setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(66,40,27))
+    maxLines=1
+   },LinearLayout.LayoutParams(-1,dp(24)))
+   nav.addView(b,LinearLayout.LayoutParams(0,-1,1f))
   }
-  navButton("Učení"){worlds(false)}
-  navButton("Výslovnost"){listen()}
-  navButton("Hra"){worlds(true)}
-  navButton("Odměny"){rewards()}
-  navButton("Profil"){profile()}
-  outer.addView(nav,FrameLayout.LayoutParams(-1,dp(84),Gravity.BOTTOM).apply{leftMargin=dp(5);rightMargin=dp(5);bottomMargin=dp(3)})
+  navButton("Učení","book"){worlds(false)}
+  navButton("Výslovnost","mic"){listen()}
+  navButton("Hra","game"){worlds(true)}
+  navButton("Odměny","chest"){rewards()}
+  navButton("Profil","bear"){profile()}
+  outer.addView(nav,FrameLayout.LayoutParams(-1,dp(82),Gravity.BOTTOM).apply{
+   leftMargin=dp(5);rightMargin=dp(5);bottomMargin=dp(3)
+  })
 
   setContentView(outer)
  }
