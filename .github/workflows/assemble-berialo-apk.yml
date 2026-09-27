@@ -15,22 +15,69 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assemble and verify APK
+      - name: Rebuild and verify APK
         shell: bash
         run: |
-          cat apk_parts/part*.b64 | tr -d '\n\r ' | base64 -d > Berialo-v1.8.4.apk
-          test "$(stat -c%s Berialo-v1.8.4.apk)" -eq 2200102
-          echo "eb490f03afb5ead5d22ab7038a1f5fb9ccdf649b457b8610ba9fa25aeb11184f  Berialo-v1.8.4.apk" | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
 
-      - name: Publish GitHub release
+          out = bytearray()
+
+          def add_dec(path, offset=0, xor_mask=0):
+              s = Path(path).read_text(encoding='ascii').strip()
+              if not s:
+                  return
+              vals = (int(x) for x in s.split(',') if x)
+              if xor_mask:
+                  out.extend((((v - offset) ^ xor_mask) & 0xff) for v in vals)
+              else:
+                  out.extend(((v - offset) & 0xff) for v in vals)
+
+          def add_nib(path):
+              alpha = 'ghijklmnopqrstuv'
+              rev = {c: i for i, c in enumerate(alpha)}
+              s = ''.join(Path(path).read_text(encoding='ascii').split())
+              assert len(s) % 2 == 0
+              out.extend(((rev[s[i]] << 4) | rev[s[i+1]]) for i in range(0, len(s), 2))
+
+          add_dec('apk_decimal/part00.txt')
+          add_dec('apk_decimal/part01a.txt')
+          add_dec('apk_decimal/part01b_offset.txt', offset=1000)
+          add_dec('apk_decimal/part02.txt')
+          add_dec('apk_decimal/part03.txt')
+
+          for i in range(4, 11):
+              add_dec(f'apk_offset/part{i:02d}.txt', offset=1000)
+
+          add_dec('apk_masked/part11.txt', offset=1000, xor_mask=165)
+          add_dec('apk_masked/part12a.txt', offset=1000, xor_mask=165)
+          add_nib('apk_nibble/part12b.txt')
+          add_dec('apk_masked/part13.txt', offset=1000, xor_mask=165)
+          add_nib('apk_nibble/part14.txt')
+          add_nib('apk_nibble/part15.txt')
+
+          apk = Path('Berialo-v1.8.4.apk')
+          apk.write_bytes(out)
+
+          expected_size = 2200102
+          expected_sha = 'eb490f03afb5ead5d22ab7038a1f5fb9ccdf649b457b8610ba9fa25aeb11184f'
+          actual_sha = hashlib.sha256(out).hexdigest()
+
+          assert len(out) == expected_size, (len(out), expected_size)
+          assert actual_sha == expected_sha, (actual_sha, expected_sha)
+          print(f'APK OK: {len(out)} bytes, SHA-256 {actual_sha}')
+          PY
+
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          gh release delete v1.8.4 --yes || true
-          git push --delete origin v1.8.4 || true
+          gh release view v1.8.4 >/dev/null 2>&1 && gh release delete v1.8.4 --yes --cleanup-tag || true
           gh release create v1.8.4 Berialo-v1.8.4.apk --title "Berialo v1.8.4" --notes "Berialo Android APK"
 
-      - name: Upload workflow artifact fallback
+      - name: Upload artifact fallback
         if: always()
         uses: actions/upload-artifact@v4
         with:
