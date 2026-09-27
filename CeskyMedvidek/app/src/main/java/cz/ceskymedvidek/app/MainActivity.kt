@@ -768,136 +768,201 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   val density=resources.displayMetrics.density
   fun dp(v:Int)=(v*density).toInt()
 
-  val outer=FrameLayout(this).apply{setBackgroundColor(Color.rgb(205,235,249))}
-  val scroll=ScrollView(this).apply{isFillViewport=false;clipToPadding=false}
-  val map=FrameLayout(this).apply{minimumHeight=dp(1760)}
+  val outer=FrameLayout(this).apply{
+   setBackgroundColor(Color.rgb(247,250,253))
+  }
+  outer.addView(View(this).apply{
+   background=GradientDrawable(
+    GradientDrawable.Orientation.TOP_BOTTOM,
+    intArrayOf(Color.rgb(244,249,255),Color.rgb(255,250,242))
+   )
+  },FrameLayout.LayoutParams(-1,-1))
 
-  map.addView(ImageView(this).apply{
-   setImageResource(R.drawable.berialo_home)
-   scaleType=ImageView.ScaleType.CENTER_CROP
-   contentDescription=null
-  },FrameLayout.LayoutParams(-1,dp(1760)))
+  val content=LinearLayout(this).apply{
+   orientation=LinearLayout.VERTICAL
+   gravity=Gravity.CENTER_HORIZONTAL
+   setPadding(dp(14),dp(18),dp(14),dp(18))
+   setBackgroundColor(Color.TRANSPARENT)
+  }
 
-  fun worldButton(world:String,kind:String,accent:Int,top:Int,left:Boolean,click:()->Unit){
-   val card=LinearLayout(this).apply{
-    orientation=LinearLayout.HORIZONTAL
-    gravity=Gravity.CENTER_VERTICAL
-    setPadding(dp(12),dp(10),dp(12),dp(10))
-    isClickable=true;isFocusable=true;contentDescription=world
-    background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-     intArrayOf(Color.rgb(255,254,247),Color.rgb(250,239,211))).apply{
-      cornerRadius=dp(28).toFloat()
-      setStroke(dp(2),Color.rgb(225,195,144))
+  val scroll=ScrollView(this).apply{
+   isFillViewport=true
+   clipToPadding=false
+   addView(content,ViewGroup.LayoutParams(-1,-2))
+  }
+  outer.addView(scroll,FrameLayout.LayoutParams(-1,-1).apply{
+   bottomMargin=dp(88)
+  })
+
+  val header=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL
+   gravity=Gravity.CENTER_VERTICAL
+   setPadding(dp(10),dp(6),dp(10),dp(6))
+  }
+
+  val counter=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL
+   gravity=Gravity.CENTER
+   background=GradientDrawable().apply{
+    setColor(Color.rgb(255,251,239))
+    cornerRadius=dp(20).toFloat()
+    setStroke(dp(2),Color.rgb(218,188,135))
+   }
+   setPadding(dp(6),dp(3),dp(8),dp(3))
+  }
+  counter.addView(TwinkleStarsView(this,1,1),LinearLayout.LayoutParams(dp(34),dp(34)))
+  counter.addView(TextView(this).apply{
+   text=stars.toString()
+   textSize=18f
+   gravity=Gravity.CENTER
+   setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(76,43,25))
+  },LinearLayout.LayoutParams(dp(34),dp(34)))
+  header.addView(counter,LinearLayout.LayoutParams(dp(82),dp(48)))
+
+  header.addView(Space(this),LinearLayout.LayoutParams(0,1,1f))
+
+  header.addView(TextView(this).apply{
+   text="BERIALO"
+   textSize=30f
+   gravity=Gravity.CENTER
+   setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(32,102,195))
+   setShadowLayer(3f,0f,1f,Color.WHITE)
+  },LinearLayout.LayoutParams(dp(190),dp(52)))
+
+  header.addView(Space(this),LinearLayout.LayoutParams(0,1,1f))
+  header.addView(Space(this),LinearLayout.LayoutParams(dp(82),dp(48)))
+
+  content.addView(header,LinearLayout.LayoutParams(-1,dp(60)))
+  content.addView(TextView(this).apply{
+   text="Vyber si svět"
+   textSize=24f
+   gravity=Gravity.CENTER
+   setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(82,43,25))
+   setPadding(0,dp(4),0,dp(10))
+  },LinearLayout.LayoutParams(-1,dp(54)))
+
+  fun worldCard(world:String,kind:String,accent:Int,click:()->Unit):View{
+   return LinearLayout(this).apply{
+    orientation=LinearLayout.VERTICAL
+    gravity=Gravity.CENTER
+    setPadding(dp(10),dp(10),dp(10),dp(10))
+    isClickable=true
+    isFocusable=true
+    contentDescription=world
+    background=GradientDrawable(
+     GradientDrawable.Orientation.TOP_BOTTOM,
+     intArrayOf(Color.rgb(255,254,248),Color.rgb(250,241,218))
+    ).apply{
+     cornerRadius=dp(28).toFloat()
+     setStroke(dp(2),Color.rgb(224,202,164))
     }
-    elevation=dp(10).toFloat()
+    elevation=dp(8).toFloat()
+
+    addView(WorldIconView(this@MainActivity,kind,accent),
+     LinearLayout.LayoutParams(dp(72),dp(72)).apply{bottomMargin=dp(8)})
+
+    addView(TextView(this@MainActivity).apply{
+     text=if(world=="Barvy a tvary")"Barvy" else world
+     textSize=18f
+     gravity=Gravity.CENTER
+     setTypeface(typeface,Typeface.BOLD)
+     setTextColor(Color.rgb(66,38,24))
+     maxLines=1
+    },LinearLayout.LayoutParams(-1,dp(30)))
+
+    addView(TwinkleStarsView(this@MainActivity,worldStars(world),5),
+     LinearLayout.LayoutParams(dp(118),dp(30)).apply{topMargin=dp(4)})
+
     setOnClickListener{click()}
    }
+  }
 
-   card.addView(WorldIconView(this,kind,accent),LinearLayout.LayoutParams(dp(70),dp(70)))
-
-   val middle=LinearLayout(this).apply{
-    orientation=LinearLayout.VERTICAL
-    gravity=Gravity.CENTER_VERTICAL
-    setPadding(dp(10),0,dp(6),0)
-   }
-   middle.addView(TextView(this).apply{
-    text=world
-    textSize=20f
-    setTypeface(typeface,Typeface.BOLD)
-    setTextColor(Color.rgb(69,43,26))
-    gravity=Gravity.START
-   },LinearLayout.LayoutParams(-1,dp(32)))
-   middle.addView(TwinkleStarsView(this,worldStars(world),5),
-    LinearLayout.LayoutParams(dp(155),dp(38)))
-   card.addView(middle,LinearLayout.LayoutParams(0,dp(78),1f))
-
-   card.addView(TextView(this).apply{
-    text="›"
-    textSize=38f
+  fun row(left:View,right:View?){
+   val r=LinearLayout(this).apply{
+    orientation=LinearLayout.HORIZONTAL
     gravity=Gravity.CENTER
-    setTypeface(typeface,Typeface.BOLD)
-    setTextColor(Color.rgb(127,91,56))
-   },LinearLayout.LayoutParams(dp(34),-1))
-
-   val w=dp(325)
-   val h=dp(104)
-   map.addView(card,FrameLayout.LayoutParams(w,h).apply{
-    topMargin=dp(top)
-    if(left) leftMargin=dp(18) else {gravity=Gravity.END;rightMargin=dp(18)}
+   }
+   r.addView(left,LinearLayout.LayoutParams(0,dp(156),1f).apply{
+    setMargins(dp(6),dp(6),dp(6),dp(6))
    })
+   if(right!=null){
+    r.addView(right,LinearLayout.LayoutParams(0,dp(156),1f).apply{
+     setMargins(dp(6),dp(6),dp(6),dp(6))
+    })
+   }else{
+    r.addView(Space(this),LinearLayout.LayoutParams(0,dp(156),1f).apply{
+     setMargins(dp(6),dp(6),dp(6),dp(6))
+    })
+   }
+   content.addView(r,LinearLayout.LayoutParams(-1,-2))
   }
 
-  worldButton("Domeček","house",Color.rgb(70,156,220),185,true){worldHub("Domeček")}
-  worldButton("Zvířata","paw",Color.rgb(89,181,92),475,false){worldHub("Zvířata")}
-  worldButton("Jídlo","apple",Color.rgb(230,81,68),765,true){worldHub("Jídlo")}
-  worldButton("Barvy a tvary","palette",Color.rgb(73,151,218),1055,false){worldHub("Barvy a tvary")}
-  worldButton("Škola","school",Color.rgb(132,93,207),1345,true){schoolPrep()}
+  row(
+   worldCard("Domeček","house",Color.rgb(70,156,220)){worldHub("Domeček")},
+   worldCard("Zvířata","paw",Color.rgb(89,181,92)){worldHub("Zvířata")}
+  )
+  row(
+   worldCard("Jídlo","apple",Color.rgb(230,81,68)){worldHub("Jídlo")},
+   worldCard("Barvy a tvary","palette",Color.rgb(73,151,218)){worldHub("Barvy a tvary")}
+  )
 
-  scroll.addView(map,ViewGroup.LayoutParams(-1,dp(1760)))
-  outer.addView(scroll,FrameLayout.LayoutParams(-1,-1).apply{bottomMargin=dp(88);topMargin=dp(74)})
-
-  val topBar=LinearLayout(this).apply{
-   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
-   setPadding(dp(10),dp(8),dp(10),dp(8))
-   background=GradientDrawable().apply{setColor(Color.argb(230,255,250,238))}
+  val lastRow=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL
+   gravity=Gravity.CENTER
   }
-  val counter=LinearLayout(this).apply{
-   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
-   background=GradientDrawable().apply{setColor(Color.rgb(255,251,239));cornerRadius=dp(20).toFloat();setStroke(dp(2),Color.rgb(218,188,135))}
-   setPadding(dp(8),dp(4),dp(8),dp(4))
-  }
-  counter.addView(TwinkleStarsView(this,1,1),LinearLayout.LayoutParams(dp(36),dp(36)))
-  counter.addView(TextView(this).apply{text=stars.toString();textSize=19f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(76,43,25))},
-   LinearLayout.LayoutParams(dp(38),dp(36)))
-  topBar.addView(counter,LinearLayout.LayoutParams(dp(86),dp(50)))
-  topBar.addView(Space(this),LinearLayout.LayoutParams(0,1,1f))
-  val logo=TextView(this).apply{
-   text="BERIALO";textSize=28f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
-   setTextColor(Color.rgb(32,102,195));setShadowLayer(3f,0f,1f,Color.WHITE)
-   background=GradientDrawable().apply{setColor(Color.rgb(222,153,78));cornerRadius=dp(22).toFloat();setStroke(dp(2),Color.rgb(155,91,42))}
-   setPadding(dp(16),dp(4),dp(16),dp(4))
-  }
-  topBar.addView(logo,LinearLayout.LayoutParams(dp(172),dp(52)))
-  topBar.addView(Space(this),LinearLayout.LayoutParams(0,1,1f))
-  val settings=TextView(this).apply{
-   text="";contentDescription="Nastavení";isClickable=true;isFocusable=true
-   background=GradientDrawable().apply{setColor(Color.rgb(255,252,244));shape=GradientDrawable.OVAL;setStroke(dp(2),Color.rgb(224,211,185))}
-   setOnClickListener{profile()}
-  }
-  topBar.addView(settings,LinearLayout.LayoutParams(dp(50),dp(50)))
-  outer.addView(topBar,FrameLayout.LayoutParams(-1,dp(74),Gravity.TOP))
+  val school=worldCard("Škola","school",Color.rgb(132,93,207)){schoolPrep()}
+  lastRow.addView(school,LinearLayout.LayoutParams(
+   (resources.displayMetrics.widthPixels-dp(52))/2,
+   dp(156)
+  ).apply{setMargins(dp(6),dp(6),dp(6),dp(6))})
+  content.addView(lastRow,LinearLayout.LayoutParams(-1,-2))
 
   val nav=LinearLayout(this).apply{
-   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
+   orientation=LinearLayout.HORIZONTAL
+   gravity=Gravity.CENTER
    setPadding(dp(4),dp(4),dp(4),dp(4))
    background=GradientDrawable().apply{
-    setColor(Color.rgb(255,252,244));cornerRadius=dp(28).toFloat();setStroke(dp(2),Color.rgb(231,210,171))
+    setColor(Color.rgb(255,252,244))
+    cornerRadius=dp(28).toFloat()
+    setStroke(dp(2),Color.rgb(231,210,171))
    }
    elevation=dp(12).toFloat()
   }
+
   fun navButton(label:String,kind:String,click:()->Unit){
    val b=LinearLayout(this).apply{
     orientation=LinearLayout.VERTICAL
     gravity=Gravity.CENTER
-    isClickable=true;isFocusable=true
+    isClickable=true
+    isFocusable=true
     setPadding(0,dp(2),0,dp(1))
     setOnClickListener{click()}
    }
    b.addView(BottomNavIconView(this,kind),LinearLayout.LayoutParams(dp(44),dp(44)))
    b.addView(TextView(this).apply{
-    text=label;textSize=10.5f;gravity=Gravity.CENTER
-    setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(66,40,27))
+    text=label
+    textSize=10.5f
+    gravity=Gravity.CENTER
+    setTypeface(typeface,Typeface.BOLD)
+    setTextColor(Color.rgb(66,40,27))
     maxLines=1
    },LinearLayout.LayoutParams(-1,dp(24)))
    nav.addView(b,LinearLayout.LayoutParams(0,-1,1f))
   }
+
   navButton("Učení","book"){worlds(false)}
   navButton("Výslovnost","mic"){listen()}
   navButton("Hra","game"){worlds(true)}
   navButton("Odměny","chest"){rewards()}
   navButton("Profil","bear"){profile()}
+
   outer.addView(nav,FrameLayout.LayoutParams(-1,dp(82),Gravity.BOTTOM).apply{
-   leftMargin=dp(5);rightMargin=dp(5);bottomMargin=dp(3)
+   leftMargin=dp(5)
+   rightMargin=dp(5)
+   bottomMargin=dp(3)
   })
 
   setContentView(outer)
