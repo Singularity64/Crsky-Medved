@@ -11,8 +11,8 @@ android {
         applicationId = "cz.berialo.app"
         minSdk = 23
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.8.5"
+        versionCode = 15
+        versionName = "1.8.6"
     }
 
     compileOptions {
