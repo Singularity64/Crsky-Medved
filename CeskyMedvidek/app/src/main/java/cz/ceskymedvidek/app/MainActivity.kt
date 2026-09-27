@@ -633,7 +633,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   val map=FrameLayout(this).apply{minimumHeight=dp(1760)}
 
   map.addView(ImageView(this).apply{
-   setImageResource(R.drawable.berialo_map_bg)
+   setImageResource(R.drawable.berialo_home)
    scaleType=ImageView.ScaleType.CENTER_CROP
    contentDescription=null
   },FrameLayout.LayoutParams(-1,dp(1760)))
