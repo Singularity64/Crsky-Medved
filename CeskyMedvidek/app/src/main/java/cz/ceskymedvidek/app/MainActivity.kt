@@ -225,7 +225,23 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  )
  private val words by lazy { vocabulary.flatMap { (world,names) -> names.map { Word(it, worldIcons[world] ?: "⭐", world) } } }
  private val worldList by lazy { vocabulary.keys.map { it to (worldIcons[it] ?: "⭐") } }
- override fun onCreate(b:Bundle?){super.onCreate(b);tts=TextToSpeech(this,this);splash()}
+ override fun onCreate(b:Bundle?){
+  super.onCreate(b)
+  immersiveUi()
+  tts=TextToSpeech(this,this)
+  home()
+ }
+ private fun immersiveUi(){
+  window.statusBarColor=Color.TRANSPARENT
+  window.navigationBarColor=Color.TRANSPARENT
+  window.decorView.systemUiVisibility=
+   View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+   View.SYSTEM_UI_FLAG_FULLSCREEN or
+   View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+   View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+   View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+   View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+ }
  override fun onInit(s:Int){
   if(s==TextToSpeech.SUCCESS){
    tts.language=Locale("cs","CZ")
@@ -259,7 +275,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   cancelListening()
   val frame=FrameLayout(this)
   frame.addView(ImageView(this).apply{
-   setImageResource(R.drawable.berialo_map_bg)
+   setImageResource(R.drawable.berialo_home)
    scaleType=ImageView.ScaleType.CENTER_CROP
    contentDescription=null
   },FrameLayout.LayoutParams(-1,-1))
@@ -542,18 +558,103 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   b.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(650).setInterpolator(OvershootInterpolator())
   Handler(Looper.getMainLooper()).postDelayed({home()},1400)
  }
- private fun home(){
-  base()
-  root.setPadding(18,24,18,36)
-  logoPlaque()
-  statsPanel()
-  if(pendingChests>0){
-   bigBtn("🎁 BERI NAŠEL TRUHLU","Otevři poklad na mapě",Color.rgb(245,161,36)){treasureHunt()}
+ private fun mapPlace(frame:FrameLayout,v:View,x:Float,y:Float,wf:Float,hf:Float){
+  val sw=resources.displayMetrics.widthPixels
+  val sh=resources.displayMetrics.heightPixels
+  frame.addView(v,FrameLayout.LayoutParams((sw*wf).toInt(),(sh*hf).toInt()).apply{
+   leftMargin=(sw*x).toInt()
+   topMargin=(sh*y).toInt()
+  })
+ }
+ private fun mapHit(frame:FrameLayout,label:String,x:Float,y:Float,w:Float,h:Float,click:()->Unit){
+  val hit=View(this).apply{
+   contentDescription=label
+   isClickable=true
+   isFocusable=true
+   background=ColorDrawable(Color.TRANSPARENT)
+   setOnClickListener{click()}
   }
-  val active=currentWorldIndex()
-  worldList.forEachIndexed{index,w->worldMapCard(w.first,w.second,index,index==active)}
-  navBar()
- } private fun worlds(q:Boolean){
+  mapPlace(frame,hit,x,y,w,h)
+ }
+ private fun mapStars(frame:FrameLayout,world:String,x:Float,y:Float,w:Float,h:Float){
+  val panel=FrameLayout(this).apply{
+   background=GradientDrawable().apply{
+    setColor(Color.rgb(255,248,230))
+    cornerRadius=22f
+   }
+   elevation=2f
+   isClickable=false
+   importantForAccessibility=View.IMPORTANT_FOR_ACCESSIBILITY_NO
+  }
+  panel.addView(TwinkleStarsView(this,worldStars(world),5),FrameLayout.LayoutParams(-1,-1))
+  mapPlace(frame,panel,x,y,w,h)
+ }
+ private fun home(){
+  speechScreenActive=false
+  resumeListeningAfterTts=null
+  cancelListening()
+  immersiveUi()
+
+  val frame=FrameLayout(this).apply{setBackgroundColor(Color.BLACK)}
+  frame.addView(ImageView(this).apply{
+   setImageResource(R.drawable.berialo_home)
+   scaleType=ImageView.ScaleType.FIT_XY
+   contentDescription="Berialo – Beriho dobrodružná mapa"
+  },FrameLayout.LayoutParams(-1,-1))
+
+  // Skutečné animované hvězdy překryjí statické hvězdy v obrázku.
+  mapStars(frame,"Domeček",.165f,.318f,.165f,.034f)
+  mapStars(frame,"Zvířata",.765f,.395f,.165f,.034f)
+  mapStars(frame,"Jídlo",.190f,.548f,.185f,.034f)
+  mapStars(frame,"Barvy a tvary",.765f,.575f,.165f,.034f)
+  mapStars(frame,"Škola",.745f,.785f,.175f,.034f)
+
+  // Počet nasbíraných hvězd na dřevěné cedulce.
+  val starCount=TextView(this).apply{
+   text=stars.toString()
+   gravity=Gravity.CENTER
+   textSize=22f
+   setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(82,42,22))
+   background=GradientDrawable().apply{setColor(Color.rgb(255,244,215));cornerRadius=18f}
+  }
+  mapPlace(frame,starCount,.125f,.052f,.072f,.040f)
+
+  // Dynamický badge truhly zakryje číslo z grafického návrhu.
+  val chestBadge=TextView(this).apply{
+   text=if(pendingChests>0)pendingChests.toString() else ""
+   gravity=Gravity.CENTER
+   textSize=13f
+   setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.WHITE)
+   background=GradientDrawable().apply{
+    setColor(if(pendingChests>0)Color.rgb(232,36,53) else Color.rgb(250,246,235))
+    shape=GradientDrawable.OVAL
+   }
+  }
+  mapPlace(frame,chestBadge,.928f,.083f,.050f,.030f)
+
+  // Hlavní světy – zóny jsou přesně nad kartami v ilustraci.
+  mapHit(frame,"Domeček",.025f,.286f,.360f,.090f){worldHub("Domeček")}
+  mapHit(frame,"Zvířata",.650f,.357f,.345f,.090f){worldHub("Zvířata")}
+  mapHit(frame,"Jídlo",.040f,.505f,.375f,.090f){worldHub("Jídlo")}
+  mapHit(frame,"Barvy",.650f,.535f,.345f,.095f){worldHub("Barvy a tvary")}
+  mapHit(frame,"Škola",.610f,.745f,.385f,.090f){schoolPrep()}
+
+  // Horní ovládání.
+  mapHit(frame,"Nastavení",.855f,.020f,.125f,.075f){profile()}
+  mapHit(frame,"Poklady",.865f,.080f,.130f,.080f){if(pendingChests>0)treasureHunt() else rewards()}
+
+  // Spodní navigace – vizuál je součástí ilustrace, chování je skutečné.
+  mapHit(frame,"Učení",.025f,.875f,.180f,.110f){worlds(false)}
+  mapHit(frame,"Výslovnost",.205f,.875f,.185f,.110f){listen()}
+  mapHit(frame,"Hra",.390f,.875f,.190f,.110f){worlds(true)}
+  mapHit(frame,"Sbírka odměn",.580f,.875f,.205f,.110f){rewards()}
+  mapHit(frame,"Profil",.785f,.875f,.205f,.110f){profile()}
+
+  setContentView(frame)
+ }
+ private fun worlds(q:Boolean){
   base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true)
   worldList.forEach{w->btn(w.second+"   "+w.first+"   "+starsRow(w.first)){if(q)quiz(w.first)else learn(w.first,0)}}
   btn("🗺️ Mapa"){home()}
@@ -747,5 +848,9 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   btn("🗺️  Zpět na mapu"){home()}
  }
  override fun onBackPressed(){home()}
+ override fun onWindowFocusChanged(hasFocus:Boolean){
+  super.onWindowFocusChanged(hasFocus)
+  if(hasFocus)immersiveUi()
+ }
  override fun onDestroy(){try{speechRecognizer?.cancel();speechRecognizer?.destroy();speechRecognizer=null}catch(_:Exception){};tts.stop();tts.shutdown();super.onDestroy()}
 }
