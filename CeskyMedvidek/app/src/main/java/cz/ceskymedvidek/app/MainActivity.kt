@@ -8,6 +8,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -30,6 +31,9 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private var speechNextButton:Button?=null
  private var expectedSpeechWord:String?=null
  private var speechWordPassed=false
+ private var speechScreenActive=false
+ private var resumeListeningAfterTts:String?=null
+ private val speechHandler=Handler(Looper.getMainLooper())
  private val prefs by lazy{getSharedPreferences("medvidek",MODE_PRIVATE)}
  private var stars:Int get()=prefs.getInt("stars",0); set(v){prefs.edit().putInt("stars",v).apply()}
  private val praisePhrases=listOf(
@@ -104,11 +108,43 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  )
  private val words by lazy { vocabulary.flatMap { (world,names) -> names.map { Word(it, worldIcons[world] ?: "⭐", world) } } }
  private val worldList by lazy { vocabulary.keys.map { it to (worldIcons[it] ?: "⭐") } }
- override fun onCreate(b:Bundle?){super.onCreate(b);tts=TextToSpeech(this,this);splash()}
- override fun onInit(s:Int){if(s==TextToSpeech.SUCCESS){tts.language=Locale("cs","CZ");tts.setSpeechRate(.82f)}}
- private fun base(){root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_HORIZONTAL;setPadding(28,42,28,28);background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(220,246,255),Color.rgb(247,238,255)))};setContentView(ScrollView(this).apply{addView(root)})}
+ override fun onCreate(b:Bundle?){super.onCreate(b);tts=TextToSpeech(this,this);listen()}
+ override fun onInit(s:Int){
+  if(s==TextToSpeech.SUCCESS){
+   tts.language=Locale("cs","CZ")
+   tts.setSpeechRate(.82f)
+   tts.setOnUtteranceProgressListener(object:UtteranceProgressListener(){
+    override fun onStart(utteranceId:String?){}
+    override fun onDone(utteranceId:String?){
+     if(utteranceId=="word_playback"){
+      val word=resumeListeningAfterTts
+      resumeListeningAfterTts=null
+      if(word!=null)runOnUiThread{
+       if(speechScreenActive&&!speechWordPassed&&expectedSpeechWord==word)startListening(word)
+      }
+     }
+    }
+    override fun onError(utteranceId:String?){
+     if(utteranceId=="word_playback"){
+      val word=resumeListeningAfterTts
+      resumeListeningAfterTts=null
+      if(word!=null)runOnUiThread{
+       if(speechScreenActive&&!speechWordPassed&&expectedSpeechWord==word)startListening(word)
+      }
+     }
+    }
+   })
+  }
+ }
+ private fun base(){
+  speechScreenActive=false
+  resumeListeningAfterTts=null
+  cancelListening()
+  root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_HORIZONTAL;setPadding(28,42,28,28);background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(220,246,255),Color.rgb(247,238,255)))}
+  setContentView(ScrollView(this).apply{addView(root)})
+ }
  private fun text(s:String,size:Int=22,bold:Boolean=false){root.addView(TextView(this).apply{text=s;textSize=size.toFloat();gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));if(bold)setTypeface(typeface,Typeface.BOLD);setPadding(8,10,8,10)})}
- private fun speechInfo(s:String="Klepni na mikrofon a slovo zopakuj."){
+ private fun speechInfo(s:String="🎤 Mikrofon je zapnutý. Řekni slovo."){
   speechStatus=TextView(this).apply{text=s;textSize=17f;gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));setPadding(8,8,8,12)}
   root.addView(speechStatus)
  }
@@ -136,6 +172,20 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   root.addView(speechNextButton,LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
  }
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
+ private fun playWordAndResume(word:String){
+  if(!speechScreenActive)return
+  cancelListening()
+  resumeListeningAfterTts=word
+  speechStatus?.text="🔊 Poslouchej slovo…"
+  tts.speak(word,TextToSpeech.QUEUE_FLUSH,null,"word_playback")
+ }
+ private fun retryListeningSoon(delayMs:Long=700L){
+  val word=expectedSpeechWord?:return
+  if(!speechScreenActive||speechWordPassed)return
+  speechHandler.postDelayed({
+   if(speechScreenActive&&!speechWordPassed&&expectedSpeechWord==word)startListening(word)
+  },delayMs)
+ }
  private fun stickerCount(key:String)=prefs.getInt("sticker_"+key,0)
  private fun awardSuccess():RewardGrant{
   val praise=praisePhrases.random()
@@ -194,9 +244,30 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun splash(){base();root.gravity=Gravity.CENTER;val b=TextView(this).apply{text="🧸";textSize=112f;gravity=Gravity.CENTER;alpha=0f;scaleX=.4f;scaleY=.4f};root.addView(b);text("Český medvídek",34,true);b.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(700).setInterpolator(OvershootInterpolator());Handler(Looper.getMainLooper()).postDelayed({home()},2200)}
  private fun home(){cancelListening();base();root.setPadding(32,34,32,34);text("Český medvídek",34,true);text("🧸",88);text("Co si dnes dáme?",24,true);text("⭐ "+stars+"     🏆 "+(1+stars/20),18,true);bigBtn("📚 UČÍM SE","Obrázky • slova • poslech",Color.rgb(67,136,230)){worlds(false)};bigBtn("🗣️ VÝSLOVNOST","Poslechni • zopakuj • mikrofon",Color.rgb(151,103,214)){listen()};bigBtn("🎯 HRAJU SI","Najdi správný obrázek",Color.rgb(255,155,72)){worlds(true)};bigBtn("🎓 DO ŠKOLY","Počítání • pokyny • orientace",Color.rgb(89,180,120)){schoolPrep()};btn("🎁 Moje odměny"){rewards()}}
  private fun worlds(q:Boolean){base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true);text(if(q)"Kde si chceš zahrát?" else "Co se chceš učit?",20);worldList.forEach{w->btn(w.second+"   "+w.first){if(q)quiz(w.first)else learn(w.first,0)}};btn("🏠 Domů"){home()}}
- private fun learn(world:String,i:Int){cancelListening();speechWordPassed=false;speechNextButton=null;val ws=words.filter{it.world==world};val x=ws[i%ws.size];base();text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true);btn("🔊  Přehrát slovo"){say(x.name)};btn("🎤  Řekni slovo"){startListening(x.name)};speechInfo();hiddenNextBtn("Další  ➜"){learn(world,i+1)};btn("🎯  Procvičit"){quiz(world)};btn("⌂  Domů"){home()}}
+ private fun learn(world:String,i:Int){
+  speechWordPassed=false;speechNextButton=null
+  val ws=words.filter{it.world==world};val x=ws[i%ws.size]
+  base();speechScreenActive=true;expectedSpeechWord=x.name
+  text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true)
+  btn("🔊  Přehrát slovo"){playWordAndResume(x.name)}
+  speechInfo()
+  hiddenNextBtn("Další  ➜"){learn(world,i+1)}
+  btn("🎯  Procvičit"){quiz(world)}
+  btn("⌂  Domů"){home()}
+  speechHandler.postDelayed({if(speechScreenActive&&!speechWordPassed)startListening(x.name)},250)
+ }
  private fun quiz(world:String){val pool=words.filter{it.world==world};val target=pool.random();val choices=(pool.filter{it!=target}.shuffled().take(3)+target).shuffled();base();text("Najdi správný obrázek",25,true);text("Najdi: "+target.name,30,true);btn("🔊  Přehrát zadání"){say("Najdi "+target.name)};choices.forEach{c->wordBtn(c){if(c==target){awardSuccess();quiz(world)}else{say("Zkus to ještě jednou");Toast.makeText(this,"Zkus to ještě jednou",Toast.LENGTH_SHORT).show()}}};btn("⌂  Domů"){home()}}
- private fun listen(){cancelListening();speechWordPassed=false;speechNextButton=null;val x=words.random();base();text("🗣️ Výslovnost",27,true);showWordVisual(x);text(x.name,34,true);btn("🔊  Přehrát slovo"){say(x.name)};btn("🎤  Teď řekni slovo"){startListening(x.name)};speechInfo("Nejdřív si slovo poslechni, potom ho řekni do mikrofonu.");hiddenNextBtn("Další slovo  ➜"){listen()};btn("⌂  Domů"){home()}}
+ private fun listen(){
+  speechWordPassed=false;speechNextButton=null
+  val x=words.random()
+  base();speechScreenActive=true;expectedSpeechWord=x.name
+  text("🗣️ Výslovnost",27,true);showWordVisual(x);text(x.name,34,true)
+  btn("🔊  Přehrát slovo"){playWordAndResume(x.name)}
+  speechInfo("🎤 Poslouchám hned. Řekni zobrazené slovo.")
+  hiddenNextBtn("Další slovo  ➜"){listen()}
+  btn("⌂  Domů"){home()}
+  speechHandler.postDelayed({if(speechScreenActive&&!speechWordPassed)startListening(x.name)},250)
+ }
  private fun startListening(word:String){
   expectedSpeechWord=word
   if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
@@ -207,6 +278,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun beginSpeechRecognition(){
   val target=expectedSpeechWord?:return
+  if(!speechScreenActive||speechWordPassed)return
   if(!SpeechRecognizer.isRecognitionAvailable(this)){
    speechStatus?.text="Rozpoznávání řeči není v tomto telefonu dostupné."
    Toast.makeText(this,"Rozpoznávání řeči není dostupné",Toast.LENGTH_LONG).show()
@@ -222,13 +294,14 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
      override fun onEndOfSpeech(){speechStatus?.text="Kontroluji slovo…"}
      override fun onError(error:Int){
       speechStatus?.text=when(error){
-       SpeechRecognizer.ERROR_NO_MATCH->"Nerozuměl jsem. Zkus to ještě jednou."
-       SpeechRecognizer.ERROR_SPEECH_TIMEOUT->"Nic jsem neslyšel. Zkus to znovu."
-       SpeechRecognizer.ERROR_AUDIO->"Mikrofon se nepodařilo použít."
+       SpeechRecognizer.ERROR_NO_MATCH->"Nerozuměl jsem. Poslouchám znovu…"
+       SpeechRecognizer.ERROR_SPEECH_TIMEOUT->"Nic jsem neslyšel. Poslouchám znovu…"
+       SpeechRecognizer.ERROR_AUDIO->"Mikrofon měl problém. Zkouším znovu…"
        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS->"Aplikace nemá povolený mikrofon."
-       SpeechRecognizer.ERROR_NETWORK,SpeechRecognizer.ERROR_NETWORK_TIMEOUT->"Rozpoznávání řeči teď není dostupné."
-       else->"Nepodařilo se rozpoznat slovo. Zkus to znovu."
+       SpeechRecognizer.ERROR_NETWORK,SpeechRecognizer.ERROR_NETWORK_TIMEOUT->"Rozpoznávání řeči teď není dostupné. Zkouším znovu…"
+       else->"Nepodařilo se rozpoznat slovo. Poslouchám znovu…"
       }
+      if(error!=SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS)retryListeningSoon(900)
      }
      override fun onResults(results:Bundle?){
       val heard=results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
@@ -274,7 +347,8 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    speechNextButton?.visibility=View.VISIBLE
   }else{
    val best=results.firstOrNull()?.trim().orEmpty()
-   speechStatus?.text=if(best.isBlank())"Nerozuměl jsem. Zkus slovo znovu." else "Slyšel jsem „"+best+"“. Zkus znovu: "+target+"."
+   speechStatus?.text=if(best.isBlank())"Nerozuměl jsem. Poslouchám znovu…" else "Slyšel jsem „"+best+"“. Poslouchám znovu, řekni: "+target+"."
+   retryListeningSoon(700)
   }
  }
  private fun cancelListening(){try{speechRecognizer?.cancel()}catch(_:Exception){}}
