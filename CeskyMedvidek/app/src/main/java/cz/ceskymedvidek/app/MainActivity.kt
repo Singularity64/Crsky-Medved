@@ -103,60 +103,60 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private val prefs by lazy{getSharedPreferences("medvidek",MODE_PRIVATE)}
  private var stars:Int get()=prefs.getInt("stars",0); set(v){prefs.edit().putInt("stars",v).apply()}
  private val praisePhrases=listOf(
-  "Výborně!",
-  "Paráda!",
-  "Skvěle!",
-  "Perfektní!",
-  "To se ti povedlo!",
-  "Jsi šikula!",
-  "Super práce!",
-  "Máš to!",
-  "Nádhera!",
-  "Jen tak dál!"
+ "Výborně!",
+ "Paráda!",
+ "Skvěle!",
+ "Perfektní!",
+ "To se ti povedlo!",
+ "Jsi šikula!",
+ "Super práce!",
+ "Máš to!",
+ "Nádhera!",
+ "Jen tak dál!"
  )
  private val stickerRewards=listOf(
-  StickerReward("beri","🧸","Beri"),
-  StickerReward("balonek","🎈","Balónek"),
-  StickerReward("hvezda","⭐","Hvězdička"),
-  StickerReward("duha","🌈","Duha"),
-  StickerReward("srdce","💖","Srdíčko"),
-  StickerReward("korunka","👑","Korunka"),
-  StickerReward("pohar","🏆","Pohár"),
-  StickerReward("raketa","🚀","Raketa"),
-  StickerReward("jednorozec","🦄","Jednorožec"),
-  StickerReward("darek","🎁","Dárek")
+  StickerReward("beri","","Beri"),
+  StickerReward("balonek","","Balónek"),
+  StickerReward("hvezda","","Hvězdička"),
+  StickerReward("duha","","Duha"),
+  StickerReward("srdce","","Srdíčko"),
+  StickerReward("korunka","","Korunka"),
+  StickerReward("pohar","","Pohár"),
+  StickerReward("raketa","","Raketa"),
+  StickerReward("jednorozec","","Jednorožec"),
+  StickerReward("darek","","Dárek")
  )
  private val adventureTreasures=listOf(
-  StickerReward("auto","🏎️","Závodní auto"),
-  StickerReward("robot","🤖","Robot"),
-  StickerReward("dino","🦖","Dinosaurus"),
-  StickerReward("raketa2","🚀","Raketa"),
-  StickerReward("pirat","🏴‍☠️","Pirátský poklad"),
-  StickerReward("stit","🛡️","Hrdinský štít")
+  StickerReward("auto","","Závodní auto"),
+  StickerReward("robot","","Robot"),
+  StickerReward("dino","","Dinosaurus"),
+  StickerReward("raketa2","","Raketa"),
+  StickerReward("pirat","","Pirátský poklad"),
+  StickerReward("stit","","Hrdinský štít")
  )
  private val magicTreasures=listOf(
-  StickerReward("jednorozec2","🦄","Jednorožec"),
-  StickerReward("korunka2","👑","Korunka"),
-  StickerReward("hvezdna_hulka","🪄","Kouzelná hůlka"),
-  StickerReward("motyl","🦋","Kouzelný motýl"),
-  StickerReward("diamant","💎","Diamant"),
-  StickerReward("duha2","🌈","Duhový poklad")
+  StickerReward("jednorozec2","","Jednorožec"),
+  StickerReward("korunka2","","Korunka"),
+  StickerReward("hvezdna_hulka","","Kouzelná hůlka"),
+  StickerReward("motyl","","Kouzelný motýl"),
+  StickerReward("diamant","","Diamant"),
+  StickerReward("duha2","","Duhový poklad")
  )
  private val animalTreasures=listOf(
-  StickerReward("panda","🐼","Panda"),
-  StickerReward("lev","🦁","Lev"),
-  StickerReward("lisak","🦊","Lišák"),
-  StickerReward("delfin","🐬","Delfín"),
-  StickerReward("pejsek","🐶","Pejsek"),
-  StickerReward("tucnak","🐧","Tučňák")
+  StickerReward("panda","","Panda"),
+  StickerReward("lev","","Lev"),
+  StickerReward("lisak","","Lišák"),
+  StickerReward("delfin","","Delfín"),
+  StickerReward("pejsek","","Pejsek"),
+  StickerReward("tucnak","","Tučňák")
  )
  private val creativeTreasures=listOf(
-  StickerReward("paleta","🎨","Malířská paleta"),
-  StickerReward("kytara","🎸","Kytara"),
-  StickerReward("puzzle","🧩","Puzzle"),
-  StickerReward("kniha","📚","Kouzelná kniha"),
-  StickerReward("mic","⚽","Míč"),
-  StickerReward("foto","📸","Fotoaparát")
+  StickerReward("paleta","","Malířská paleta"),
+  StickerReward("kytara","","Kytara"),
+  StickerReward("puzzle","","Puzzle"),
+  StickerReward("kniha","","Kouzelná kniha"),
+  StickerReward("mic","","Míč"),
+  StickerReward("foto","","Fotoaparát")
  )
  private var pendingChests:Int
   get()=prefs.getInt("pending_chests",0)
@@ -165,13 +165,13 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun rewardTheme()=prefs.getString("reward_theme","")?:""
  private fun treasurePool():List<StickerReward>{
   return when(rewardTheme()){
-   "adventure"->adventureTreasures
-   "magic"->magicTreasures
-   "animals"->animalTreasures
-   "creative"->creativeTreasures
+ "adventure"->adventureTreasures
+ "magic"->magicTreasures
+ "animals"->animalTreasures
+ "creative"->creativeTreasures
    else->when(childProfile()){
-    "boy"->adventureTreasures
-    "girl"->magicTreasures
+ "boy"->adventureTreasures
+ "girl"->magicTreasures
     else->animalTreasures
    }
   }
@@ -202,30 +202,30 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  "Výlet a cestování" to listOf("výlet","cesta","dovolená","batoh","kufr","taška","mapa","kompas","stan","spacák","karimatka","baterka","láhev","svačina","fotoaparát","fotka","jízdenka","letenka","pas","hotel","pokoj","recepce","kemp","chata","hrad","zámek","rozhledna","muzeum","zoo","hora","les","jezero","moře","pláž","ostrov","letiště","nádraží","přístav","vlak","autobus","letadlo","loď","turista","průvodce","směr","vlevo","vpravo","rovně","návrat","zážitek")
  )
  private val worldIcons=mapOf(
- "Domeček" to "🏠",
- "Domácnost" to "🏡",
- "Zvířata" to "🐻",
- "Jídlo" to "🍽️",
- "Ovoce a zelenina" to "🍎",
- "Tělo" to "🧒",
- "Oblečení" to "👕",
- "Doprava" to "🚗",
- "Město" to "🏙️",
- "Příroda" to "🌳",
- "Škola" to "🎒",
- "Hračky" to "🧸",
- "Barvy a tvary" to "🎨",
- "Čísla a čas" to "🔢",
- "Rodina a lidé" to "👨‍👩‍👧",
- "Povolání" to "👷",
- "Sport" to "⚽",
- "Slovesa" to "🏃",
- "Vlastnosti" to "✨",
- "Počasí a roční doby" to "🌦️",
- "Výlet a cestování" to "🗺️"
+ "Domeček" to "",
+ "Domácnost" to "",
+ "Zvířata" to "",
+ "Jídlo" to "",
+ "Ovoce a zelenina" to "",
+ "Tělo" to "",
+ "Oblečení" to "",
+ "Doprava" to "",
+ "Město" to "",
+ "Příroda" to "",
+ "Škola" to "",
+ "Hračky" to "",
+ "Barvy a tvary" to "",
+ "Čísla a čas" to "",
+ "Rodina a lidé" to "",
+ "Povolání" to "",
+ "Sport" to "",
+ "Slovesa" to "",
+ "Vlastnosti" to "",
+ "Počasí a roční doby" to "",
+ "Výlet a cestování" to ""
  )
- private val words by lazy { vocabulary.flatMap { (world,names) -> names.map { Word(it, worldIcons[world] ?: "⭐", world) } } }
- private val worldList by lazy { vocabulary.keys.map { it to (worldIcons[it] ?: "⭐") } }
+ private val words by lazy { vocabulary.flatMap { (world,names) -> names.map { Word(it, worldIcons[world] ?: "", world) } } }
+ private val worldList by lazy { vocabulary.keys.map { it to (worldIcons[it] ?: "") } }
  override fun onCreate(b:Bundle?){
   super.onCreate(b)
   immersiveUi()
@@ -304,7 +304,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    setPadding(8,10,8,10)
   })
  }
- private fun speechInfo(s:String="🎤 Mikrofon je zapnutý. Řekni slovo."){
+ private fun speechInfo(s:String=" Mikrofon je zapnutý. Řekni slovo."){
   speechStatus=TextView(this).apply{text=s;textSize=17f;gravity=Gravity.CENTER;setTextColor(Color.rgb(31,61,112));setPadding(8,8,8,12)}
   root.addView(speechStatus)
  }
@@ -349,7 +349,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   if(!speechScreenActive)return
   cancelListening()
   resumeListeningAfterTts=word
-  speechStatus?.text="🔊 Poslouchej slovo…"
+  speechStatus?.text=" Poslouchej slovo…"
   tts.speak(word,TextToSpeech.QUEUE_FLUSH,null,"word_playback")
  }
  private fun retryListeningSoon(delayMs:Long=700L){
@@ -377,7 +377,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   val spokenReward=if(isNew)"Získáváš novou samolepku "+reward.name+"." else "Získáváš samolepku "+reward.name+"."
   val bonusText=if(bonus)" Máš celou sbírku! Dostáváš bonus deset hvězdiček." else ""
   say(praise+" "+spokenReward+bonusText)
-  val toast=(if(isNew)"🆕 " else "🎁 ")+reward.icon+" "+reward.name+"   ⭐ +1"+if(bonus)"   👑 BONUS +10 ⭐" else ""
+  val toast=(if(isNew)" " else " ")+reward.icon+" "+reward.name+" +1"+if(bonus)" BONUS +10 " else ""
   Toast.makeText(this,toast,Toast.LENGTH_LONG).show()
   return RewardGrant(praise,reward,isNew,bonus)
  }
@@ -396,7 +396,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun starsRow(world:String):String{
   val n=worldStars(world)
-  return "★".repeat(n)+"☆".repeat(5-n)
+  return "".repeat(n)+"☆".repeat(5-n)
  }
  private fun logoPlaque(subtitle:String="Beriho dobrodružná mapa"){
   val plaque=LinearLayout(this).apply{
@@ -426,7 +426,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   }
   row.addView(TwinkleStarsView(this,1,1),LinearLayout.LayoutParams(54,54))
   row.addView(TextView(this).apply{text=stars.toString();textSize=24f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(91,44,24));gravity=Gravity.CENTER})
-  row.addView(TextView(this).apply{text="     🎁 "+pendingChests;textSize=21f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(91,44,24));gravity=Gravity.CENTER})
+  row.addView(TextView(this).apply{text=" "+pendingChests;textSize=21f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(91,44,24));gravity=Gravity.CENTER})
   root.addView(row,LinearLayout.LayoutParams(-2,-2).apply{setMargins(0,0,0,10)})
  }
  private fun navBar(){
@@ -448,11 +448,11 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    item.addView(TextView(this).apply{text=label;textSize=12f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(84,43,25))})
    bar.addView(item,LinearLayout.LayoutParams(0,-2,1f))
   }
-  add("📖","Učení",Color.rgb(255,191,45)){worlds(false)}
-  add("🎙","Výslovnost",Color.rgb(139,91,218)){listen()}
-  add("🎮","Hra",Color.rgb(80,190,80)){worlds(true)}
-  add("🎁","Odměny",Color.rgb(234,98,74)){rewards()}
-  add("🧸","Profil",Color.rgb(73,161,231)){profile()}
+  add("","Učení",Color.rgb(255,191,45)){worlds(false)}
+  add("","Výslovnost",Color.rgb(139,91,218)){listen()}
+  add("","Hra",Color.rgb(80,190,80)){worlds(true)}
+  add("","Odměny",Color.rgb(234,98,74)){rewards()}
+  add("","Profil",Color.rgb(73,161,231)){profile()}
   root.addView(bar,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,18,0,4)})
  }
  private fun currentWorldIndex():Int{
@@ -502,31 +502,31 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  } private fun worldHub(world:String){
   base()
   logoPlaque("Svět "+world)
-  val icon=worldIcons[world]?:"•"
   val head=LinearLayout(this).apply{
    orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER;setPadding(18,16,18,16)
    background=GradientDrawable().apply{setColor(Color.argb(242,255,250,235));cornerRadius=38f;setStroke(3,Color.rgb(244,193,96))}
    elevation=10f
   }
-  head.addView(TextView(this).apply{text=icon;textSize=62f;gravity=Gravity.CENTER})
-  head.addView(TextView(this).apply{text=world;textSize=29f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(82,43,25))})
+  head.addView(TextView(this).apply{
+   text=world;textSize=29f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(82,43,25))
+  })
   head.addView(TwinkleStarsView(this,worldStars(world)),LinearLayout.LayoutParams(-1,54))
   root.addView(head,LinearLayout.LayoutParams(-1,-2).apply{setMargins(16,4,16,16)})
-  bigBtn("📖 UČENÍ","Obrázky • slova • poslech",Color.rgb(255,178,43)){learn(world,0)}
-  bigBtn("🎙 VÝSLOVNOST","Řekni slovo správně",Color.rgb(139,91,218)){listenWorld(world)}
-  bigBtn("🎮 HRA","Najdi správnou odpověď",Color.rgb(73,184,78)){quiz(world)}
-  btn("🗺  Zpět na mapu"){home()}
+  bigBtn("UČENÍ","Obrázky • slova • poslech",Color.rgb(255,178,43)){learn(world,0)}
+  bigBtn("VÝSLOVNOST","Řekni slovo správně",Color.rgb(139,91,218)){listenWorld(world)}
+  bigBtn("HRA","Najdi správnou odpověď",Color.rgb(73,184,78)){quiz(world)}
+  btn("Zpět na mapu"){home()}
  } private val domecekImages=mapOf(
-  "dům" to R.drawable.word_dum,
-  "panelák" to R.drawable.word_panelak,
-  "pokoj" to R.drawable.word_pokoj,
-  "postel" to R.drawable.word_postel,
-  "polštář" to R.drawable.word_polstar,
-  "deka" to R.drawable.word_deka,
-  "stůl" to R.drawable.word_stul,
-  "židle" to R.drawable.word_zidle,
-  "okno" to R.drawable.word_okno,
-  "dveře" to R.drawable.word_dvere
+ "dům" to R.drawable.word_dum,
+ "panelák" to R.drawable.word_panelak,
+ "pokoj" to R.drawable.word_pokoj,
+ "postel" to R.drawable.word_postel,
+ "polštář" to R.drawable.word_polstar,
+ "deka" to R.drawable.word_deka,
+ "stůl" to R.drawable.word_stul,
+ "židle" to R.drawable.word_zidle,
+ "okno" to R.drawable.word_okno,
+ "dveře" to R.drawable.word_dvere
  )
  private fun drawableFor(x:Word):Int?=if(x.world=="Domeček")domecekImages[x.name]else null
  private fun showWordVisual(x:Word){
@@ -535,11 +535,20 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    root.addView(ImageView(this).apply{
     setImageResource(resId);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name;adjustViewBounds=true
    },LinearLayout.LayoutParams(520,520).apply{setMargins(8,12,8,12)})
-  }else if(x.world!="Domeček") text(x.icon,112)
+  }else if(x.world!="Domeček"){
+   val badge=TextView(this).apply{
+    text=x.name.take(1).uppercase(Locale("cs","CZ"))
+    textSize=58f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+    setTextColor(Color.WHITE)
+    background=GradientDrawable().apply{setColor(Color.rgb(74,151,217));shape=GradientDrawable.OVAL;setStroke(4,Color.WHITE)}
+    elevation=8f
+   }
+   root.addView(badge,LinearLayout.LayoutParams(150,150).apply{setMargins(8,18,8,18)})
+  }
  }
  private fun wordBtn(x:Word,a:()->Unit){
   val resId=drawableFor(x)
-  if(resId==null){btn(if(x.world=="Domeček") x.name else x.icon+"   "+x.name,a);return}
+  if(resId==null){btn(if(x.world=="Domeček") x.name else x.icon+" "+x.name,a);return}
   val card=LinearLayout(this).apply{
    orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER
    background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=32f;setStroke(2,Color.rgb(190,218,244))}
@@ -552,7 +561,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun splash(){
   base();root.gravity=Gravity.CENTER
-  val b=TextView(this).apply{text="🧸";textSize=112f;gravity=Gravity.CENTER;alpha=0f;scaleX=.4f;scaleY=.4f}
+  val b=TextView(this).apply{text="";textSize=112f;gravity=Gravity.CENTER;alpha=0f;scaleX=.4f;scaleY=.4f}
   root.addView(b)
   text("BERIALO",36,true)
   text("Uč se s Berim",19)
@@ -656,34 +665,34 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   setContentView(frame)
  }
  private fun worlds(q:Boolean){
-  base();text(if(q)"🎯 Vyber si svět" else "📚 Vyber si svět",30,true)
-  worldList.forEach{w->btn(w.second+"   "+w.first+"   "+starsRow(w.first)){if(q)quiz(w.first)else learn(w.first,0)}}
-  btn("🗺️ Mapa"){home()}
+  base();text(if(q)" Vyber si svět" else " Vyber si svět",30,true)
+  worldList.forEach{w->btn(w.second+" "+w.first+" "+starsRow(w.first)){if(q)quiz(w.first)else learn(w.first,0)}}
+  btn("Mapa"){home()}
  }
  private fun learn(world:String,i:Int){
   speechWordPassed=false;speechNextButton=null
   val ws=words.filter{it.world==world};val x=ws[i%ws.size]
   base();speechScreenActive=true;expectedSpeechWord=x.name;expectedSpeechWorld=world
   text(world,25,true);showWordVisual(x);text(x.name.uppercase(),34,true)
-  btn("🔊  Přehrát slovo"){playWordAndResume(x.name)}
+  btn("Přehrát slovo"){playWordAndResume(x.name)}
   speechInfo()
   hiddenNextBtn("Další  ➜"){learn(world,i+1)}
-  btn("🎯  Procvičit"){quiz(world)}
-  btn("🗺️  Mapa"){home()}
+  btn("Procvičit"){quiz(world)}
+  btn("Mapa"){home()}
   speechHandler.postDelayed({if(speechScreenActive&&!speechWordPassed)startListening(x.name)},250)
  }
- private fun quiz(world:String){val pool=words.filter{it.world==world};val target=pool.random();val choices=(pool.filter{it!=target}.shuffled().take(3)+target).shuffled();base();text("Najdi správný obrázek",25,true);text("Najdi: "+target.name,30,true);btn("🔊  Přehrát zadání"){say("Najdi "+target.name)};choices.forEach{c->wordBtn(c){if(c==target){awardSuccess(world);quiz(world)}else{say("Zkus to ještě jednou");Toast.makeText(this,"Zkus to ještě jednou",Toast.LENGTH_SHORT).show()}}};btn("⌂  Domů"){home()}}
+ private fun quiz(world:String){val pool=words.filter{it.world==world};val target=pool.random();val choices=(pool.filter{it!=target}.shuffled().take(3)+target).shuffled();base();text("Najdi správný obrázek",25,true);text("Najdi: "+target.name,30,true);btn("Přehrát zadání"){say("Najdi "+target.name)};choices.forEach{c->wordBtn(c){if(c==target){awardSuccess(world);quiz(world)}else{say("Zkus to ještě jednou");Toast.makeText(this,"Zkus to ještě jednou",Toast.LENGTH_SHORT).show()}}};btn("⌂  Domů"){home()}}
  private fun listen(){listenWorld(null)}
  private fun listenWorld(world:String?){
   speechWordPassed=false;speechNextButton=null
   val pool=if(world==null)words else words.filter{it.world==world}
   val x=pool.random()
   base();speechScreenActive=true;expectedSpeechWord=x.name;expectedSpeechWorld=x.world
-  text("🗣️ Výslovnost",27,true);text(x.world,18,true);showWordVisual(x);text(x.name,34,true)
-  btn("🔊  Přehrát slovo"){playWordAndResume(x.name)}
-  speechInfo("🎤 Mikrofon poslouchá. Řekni zobrazené slovo.")
+  text("Výslovnost",27,true);text(x.world,18,true);showWordVisual(x);text(x.name,34,true)
+  btn("Přehrát slovo"){playWordAndResume(x.name)}
+  speechInfo(" Mikrofon poslouchá. Řekni zobrazené slovo.")
   hiddenNextBtn("Další slovo  ➜"){listenWorld(world)}
-  btn("🗺️  Mapa"){home()}
+  btn("Mapa"){home()}
   speechHandler.postDelayed({if(speechScreenActive&&!speechWordPassed)startListening(x.name)},250)
  }
  private fun startListening(word:String){
@@ -705,8 +714,8 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   if(speechRecognizer==null){
    speechRecognizer=SpeechRecognizer.createSpeechRecognizer(this).also{r->
     r.setRecognitionListener(object:RecognitionListener{
-     override fun onReadyForSpeech(params:Bundle?){speechStatus?.text="🎤 Poslouchám… řekni slovo."}
-     override fun onBeginningOfSpeech(){speechStatus?.text="🎤 Slyším tě…"}
+     override fun onReadyForSpeech(params:Bundle?){speechStatus?.text=" Poslouchám… řekni slovo."}
+     override fun onBeginningOfSpeech(){speechStatus?.text=" Slyším tě…"}
      override fun onRmsChanged(rmsdB:Float){}
      override fun onBufferReceived(buffer:ByteArray?){}
      override fun onEndOfSpeech(){speechStatus?.text="Kontroluji slovo…"}
@@ -730,7 +739,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
     })
    }
   }
-  speechStatus?.text="🎤 Připravuji mikrofon…"
+  speechStatus?.text=" Připravuji mikrofon…"
   val intent=Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply{
    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
    putExtra(RecognizerIntent.EXTRA_LANGUAGE,"cs-CZ")
@@ -758,9 +767,9 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    if(!speechWordPassed){
     speechWordPassed=true
     val grant=awardSuccess(expectedSpeechWorld)
-    speechStatus?.text="✅ "+grant.praise+"  "+grant.reward.icon+" "+grant.reward.name+"  •  Teď můžeš pokračovat dál."
+    speechStatus?.text=" "+grant.praise+" "+grant.reward.icon+" "+grant.reward.name+" •  Teď můžeš pokračovat dál."
    }else{
-    speechStatus?.text="✅ Tohle slovo už máš splněné. Můžeš pokračovat dál."
+    speechStatus?.text=" Tohle slovo už máš splněné. Můžeš pokračovat dál."
    }
    speechNextButton?.visibility=View.VISIBLE
   }else{
@@ -777,22 +786,22 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    else speechStatus?.text="Bez povolení mikrofonu nemůžu poslouchat výslovnost."
   }
  }
- private fun schoolPrep(){base();text("🎓 Příprava do školy",30,true);text("Vyber si hru",22,true);bigBtn("📍 KDE TO JE?","na • pod • vedle • před • za",Color.rgb(91,155,213)){positionGame()};bigBtn("🔢 POČÍTÁNÍ","od 1 do 20",Color.rgb(245,166,35)){countGame()};bigBtn("↔️ PROTIKLADY","velký × malý",Color.rgb(139,101,207)){oppositesGame()};bigBtn("🧠 ROZUMÍM","pokyny a situace",Color.rgb(70,170,120)){instructionGame()};btn("🏠 Domů"){home()}}
- private fun positionGame(){val tasks=listOf("Míč je NA stole." to "na","Kočka je POD stolem." to "pod","Medvídek je VEDLE židle." to "vedle","Auto je PŘED domem." to "před","Pes je ZA domem." to "za","Kostka je V krabici." to "v","Židle je MEZI stoly." to "mezi");val t=tasks.random();base();text("Kde to je?",28,true);text(t.first,27,true);btn("🔊 Poslechni"){say(t.first)};listOf("na","pod","vedle","před","za","v","mezi").shuffled().take(4).let{xs->val opts=(xs+t.second).distinct().shuffled().take(4);opts.forEach{o->btn(o.uppercase()){if(o==t.second){awardSuccess("Škola");positionGame()}else say("Zkus to znovu")}}};btn("⌂ Domů"){home()}}
- private fun countGame(){val n=(1..20).random();val options=listOf(n,(n+1).coerceAtMost(20),(n-1).coerceAtLeast(1),(1..20).random()).distinct().shuffled();base();text("Počítání do 20",28,true);text("⭐ ".repeat(n),22);text("Kolik je hvězdiček?",22,true);options.forEach{o->btn(o.toString()){if(o==n){awardSuccess("Škola");countGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
+ private fun schoolPrep(){base();text("Příprava do školy",30,true);text("Vyber si hru",22,true);bigBtn("KDE TO JE?","na • pod • vedle • před • za",Color.rgb(91,155,213)){positionGame()};bigBtn("POČÍTÁNÍ","od 1 do 20",Color.rgb(245,166,35)){countGame()};bigBtn("PROTIKLADY","velký × malý",Color.rgb(139,101,207)){oppositesGame()};bigBtn("ROZUMÍM","pokyny a situace",Color.rgb(70,170,120)){instructionGame()};btn("Domů"){home()}}
+ private fun positionGame(){val tasks=listOf("Míč je NA stole." to "na","Kočka je POD stolem." to "pod","Medvídek je VEDLE židle." to "vedle","Auto je PŘED domem." to "před","Pes je ZA domem." to "za","Kostka je V krabici." to "v","Židle je MEZI stoly." to "mezi");val t=tasks.random();base();text("Kde to je?",28,true);text(t.first,27,true);btn("Poslechni"){say(t.first)};listOf("na","pod","vedle","před","za","v","mezi").shuffled().take(4).let{xs->val opts=(xs+t.second).distinct().shuffled().take(4);opts.forEach{o->btn(o.uppercase()){if(o==t.second){awardSuccess("Škola");positionGame()}else say("Zkus to znovu")}}};btn("⌂ Domů"){home()}}
+ private fun countGame(){val n=(1..20).random();val options=listOf(n,(n+1).coerceAtMost(20),(n-1).coerceAtLeast(1),(1..20).random()).distinct().shuffled();base();text("Počítání do 20",28,true);text("".repeat(n),22);text("Kolik je hvězdiček?",22,true);options.forEach{o->btn(o.toString()){if(o==n){awardSuccess("Škola");countGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
  private fun oppositesGame(){val pairs=listOf("velký" to "malý","rychlý" to "pomalý","teplý" to "studený","nahoře" to "dole","den" to "noc","plný" to "prázdný","otevřený" to "zavřený","veselý" to "smutný","dlouhý" to "krátký","čistý" to "špinavý");val p=pairs.random();val choices=(pairs.flatMap{listOf(it.first,it.second)}.filter{it!=p.first}.shuffled().take(3)+p.second).shuffled();base();text("Najdi protiklad",28,true);text(p.first.uppercase(),32,true);choices.forEach{o->btn(o){if(o==p.second){awardSuccess("Škola");oppositesGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
- private fun instructionGame(){val tasks=listOf("Co uděláš, když učitel řekne: Otevři knihu?" to "otevřu knihu","Co uděláš před přechodem přes silnici?" to "rozhlédnu se","Co řekneš, když o něco žádáš?" to "prosím","Co řekneš, když ti někdo pomůže?" to "děkuji","Kterou rukou ukazuješ doprava?" to "pravou");val t=tasks.random();val wrong=listOf("zavřu oči","uteču","nevím","nic neřeknu","otočím se");val choices=(wrong.shuffled().take(3)+t.second).shuffled();base();text("Rozumím pokynům",28,true);text(t.first,22,true);btn("🔊 Poslechni"){say(t.first)};choices.forEach{o->btn(o){if(o==t.second){awardSuccess("Škola");instructionGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
+ private fun instructionGame(){val tasks=listOf("Co uděláš, když učitel řekne: Otevři knihu?" to "otevřu knihu","Co uděláš před přechodem přes silnici?" to "rozhlédnu se","Co řekneš, když o něco žádáš?" to "prosím","Co řekneš, když ti někdo pomůže?" to "děkuji","Kterou rukou ukazuješ doprava?" to "pravou");val t=tasks.random();val wrong=listOf("zavřu oči","uteču","nevím","nic neřeknu","otočím se");val choices=(wrong.shuffled().take(3)+t.second).shuffled();base();text("Rozumím pokynům",28,true);text(t.first,22,true);btn("Poslechni"){say(t.first)};choices.forEach{o->btn(o){if(o==t.second){awardSuccess("Škola");instructionGame()}else say("Zkus to znovu")}};btn("⌂ Domů"){home()}}
  private fun treasureHunt(){
   base()
   val place=prefs.getString("last_chest_world","na cestě")?:"na cestě"
-  text("🗺️ Beri našel poklad!",30,true)
-  text("🧸",82)
+  text("Beri našel poklad!",30,true)
+  text("",82)
   text("Truhla čeká ve světě: "+place,19,true)
-  text("🎁",110)
+  text("",110)
   if(pendingChests>0){
-   bigBtn("🔓 OTEVŘÍT TRUHLU","Zjisti, co Beri našel",Color.rgb(244,174,48)){openTreasure()}
+   bigBtn("OTEVŘÍT TRUHLU","Zjisti, co Beri našel",Color.rgb(244,174,48)){openTreasure()}
   }else text("Teď žádná truhla nečeká. Získej další hvězdu.",18)
-  btn("🗺️  Zpět na mapu"){home()}
+  btn("Zpět na mapu"){home()}
  }
  private fun openTreasure(){
   if(pendingChests<=0){home();return}
@@ -801,52 +810,52 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   prefs.edit().putInt("treasure_"+reward.key,old+1).apply()
   pendingChests-=1
   base()
-  text(if(old==0)"✨ NOVÝ POKLAD!" else "🎁 DALŠÍ POKLAD!",30,true)
+  text(if(old==0)" NOVÝ POKLAD!" else " DALŠÍ POKLAD!",30,true)
   text(reward.icon,116)
   text(reward.name,30,true)
   text("Beri ho přidal do tvé sbírky.",19)
   say("Beri našel "+reward.name+". Skvělá práce!")
-  if(pendingChests>0)bigBtn("🎁 OTEVŘÍT DALŠÍ","Ještě jedna truhla čeká",Color.rgb(244,174,48)){treasureHunt()}
-  btn("🎁  Moje sbírka"){rewards()}
-  btn("🗺️  Mapa"){home()}
+  if(pendingChests>0)bigBtn("OTEVŘÍT DALŠÍ","Ještě jedna truhla čeká",Color.rgb(244,174,48)){treasureHunt()}
+  btn("Moje sbírka"){rewards()}
+  btn("Mapa"){home()}
  }
  private fun profile(){
   base()
-  text("👤 Profil dítěte",30,true)
+  text("Profil dítěte",30,true)
   text("Kdo si dnes hraje s Berim?",18)
   val p=childProfile()
-  btn((if(p=="boy")"✅ " else "")+"👦 Kluk"){prefs.edit().putString("child_profile","boy").apply();profile()}
-  btn((if(p=="girl")"✅ " else "")+"👧 Holka"){prefs.edit().putString("child_profile","girl").apply();profile()}
-  btn((if(p=="neutral")"✅ " else "")+"🧒 Nechci řešit"){prefs.edit().putString("child_profile","neutral").apply();profile()}
+  btn((if(p=="boy")" " else "")+" Kluk"){prefs.edit().putString("child_profile","boy").apply();profile()}
+  btn((if(p=="girl")" " else "")+" Holka"){prefs.edit().putString("child_profile","girl").apply();profile()}
+  btn((if(p=="neutral")" " else "")+" Nechci řešit"){prefs.edit().putString("child_profile","neutral").apply();profile()}
   text("Co má dítě nejraději?",22,true)
   text("Tohle má větší vliv na poklady než samotná volba kluk/holka.",15)
   val theme=rewardTheme()
-  btn((if(theme=="adventure")"✅ " else "")+"🏎️ Dobrodružství"){prefs.edit().putString("reward_theme","adventure").apply();profile()}
-  btn((if(theme=="magic")"✅ " else "")+"🦄 Kouzelný svět"){prefs.edit().putString("reward_theme","magic").apply();profile()}
-  btn((if(theme=="animals")"✅ " else "")+"🐾 Zvířata"){prefs.edit().putString("reward_theme","animals").apply();profile()}
-  btn((if(theme=="creative")"✅ " else "")+"🎨 Tvoření a hry"){prefs.edit().putString("reward_theme","creative").apply();profile()}
-  btn("🧹 Nechat Beriho vybrat"){prefs.edit().remove("reward_theme").apply();profile()}
-  btn("🗺️  Zpět na mapu"){home()}
+  btn((if(theme=="adventure")" " else "")+" Dobrodružství"){prefs.edit().putString("reward_theme","adventure").apply();profile()}
+  btn((if(theme=="magic")" " else "")+" Kouzelný svět"){prefs.edit().putString("reward_theme","magic").apply();profile()}
+  btn((if(theme=="animals")" " else "")+" Zvířata"){prefs.edit().putString("reward_theme","animals").apply();profile()}
+  btn((if(theme=="creative")" " else "")+" Tvoření a hry"){prefs.edit().putString("reward_theme","creative").apply();profile()}
+  btn("Nechat Beriho vybrat"){prefs.edit().remove("reward_theme").apply();profile()}
+  btn("Zpět na mapu"){home()}
  }
  private fun rewards(){
   base()
-  text("🎁 Beriho sbírka",30,true)
-  text("⭐ "+stars,42,true)
+  text("Beriho sbírka",30,true)
+  text(""+stars,42,true)
   val collected=stickerRewards.count{stickerCount(it.key)>0}
   text("Samolepky "+collected+" / "+stickerRewards.size,22,true)
   stickerRewards.forEach{r->
    val count=stickerCount(r.key)
-   text(if(count>0)r.icon+"  "+r.name+"  × "+count else "🔒  "+r.name,19)
+   text(if(count>0)r.icon+" "+r.name+" × "+count else " "+r.name,19)
   }
-  text("🧰 Poklady z mapy",24,true)
+  text("Poklady z mapy",24,true)
   val pool=(adventureTreasures+magicTreasures+animalTreasures+creativeTreasures).distinctBy{it.key}
   val found=pool.count{treasureCount(it.key)>0}
   text("Nalezeno "+found+" různých pokladů • celkem "+vocabularyTreasureCount(),17)
-  pool.filter{treasureCount(it.key)>0}.forEach{r->text(r.icon+"  "+r.name+"  × "+treasureCount(r.key),19)}
+  pool.filter{treasureCount(it.key)>0}.forEach{r->text(r.icon+" "+r.name+" × "+treasureCount(r.key),19)}
   if(found==0)text("Zatím žádný poklad. Nová hvězda ve světě odemkne truhlu.",17)
-  if(pendingChests>0)bigBtn("🎁 OTEVŘÍT TRUHLU","Čeká jich: "+pendingChests,Color.rgb(244,174,48)){treasureHunt()}
-  btn("👤  Upravit profil a zájmy"){profile()}
-  btn("🗺️  Zpět na mapu"){home()}
+  if(pendingChests>0)bigBtn("OTEVŘÍT TRUHLU","Čeká jich: "+pendingChests,Color.rgb(244,174,48)){treasureHunt()}
+  btn("Upravit profil a zájmy"){profile()}
+  btn("Zpět na mapu"){home()}
  }
  override fun onBackPressed(){home()}
  override fun onWindowFocusChanged(hasFocus:Boolean){
