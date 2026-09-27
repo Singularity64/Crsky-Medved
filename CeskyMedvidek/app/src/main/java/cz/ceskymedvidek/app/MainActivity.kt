@@ -275,13 +275,12 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   speechScreenActive=false
   resumeListeningAfterTts=null
   cancelListening()
-  val frame=FrameLayout(this)
-  frame.addView(ImageView(this).apply{
-   setImageResource(R.drawable.berialo_home)
-   scaleType=ImageView.ScaleType.CENTER_CROP
-   contentDescription=null
+  val frame=FrameLayout(this).apply{
+   setBackgroundColor(Color.rgb(247,250,253))
+  }
+  frame.addView(View(this).apply{
+   background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(244,249,255),Color.rgb(255,250,242)))
   },FrameLayout.LayoutParams(-1,-1))
-  frame.addView(View(this).apply{setBackgroundColor(Color.argb(34,255,255,255))},FrameLayout.LayoutParams(-1,-1))
   root=LinearLayout(this).apply{
    orientation=LinearLayout.VERTICAL
    gravity=Gravity.CENTER_HORIZONTAL
@@ -339,11 +338,19 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  }
  private fun hiddenNextBtn(s:String,a:()->Unit){
   speechNextButton=Button(this).apply{
-   text=s;textSize=20f;setAllCaps(false);setTextColor(Color.WHITE);setTypeface(typeface,Typeface.BOLD)
-   background=GradientDrawable().apply{setColor(Color.rgb(74,170,103));cornerRadius=32f}
-   setPadding(18,16,18,16);visibility=View.GONE;setOnClickListener{a()}
+   text=s;textSize=20f;setAllCaps(false);setTypeface(typeface,Typeface.BOLD)
+   isEnabled=false;alpha=.82f;setTextColor(Color.WHITE)
+   background=GradientDrawable().apply{setColor(Color.rgb(174,181,190));cornerRadius=32f;setStroke(2,Color.rgb(151,158,168))}
+   setPadding(18,16,18,16);visibility=View.VISIBLE
+   setOnClickListener{if(isEnabled)a()}
   }
   root.addView(speechNextButton,LinearLayout.LayoutParams(-1,-2).apply{setMargins(8,9,8,9)})
+ }
+ private fun unlockNextButton(){
+  speechNextButton?.apply{
+   isEnabled=true;alpha=1f
+   background=GradientDrawable().apply{setColor(Color.rgb(74,170,103));cornerRadius=32f;setStroke(2,Color.rgb(54,145,82))}
+  }
  }
  private fun say(s:String)=tts.speak(s,TextToSpeech.QUEUE_FLUSH,null,"cz")
  private fun playWordAndResume(word:String){
@@ -533,9 +540,21 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
  private fun showWordVisual(x:Word){
   val resId=drawableFor(x)
   if(resId!=null){
-   root.addView(ImageView(this).apply{
+   val wrap=FrameLayout(this)
+   val picture=ImageView(this).apply{
     setImageResource(resId);scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription=x.name;adjustViewBounds=true
-   },LinearLayout.LayoutParams(520,520).apply{setMargins(8,12,8,12)})
+    background=GradientDrawable().apply{setColor(Color.WHITE);cornerRadius=34f;setStroke(2,Color.rgb(218,226,235))}
+    setPadding(8,8,8,8)
+   }
+   wrap.addView(picture,FrameLayout.LayoutParams(-1,-1))
+   val speaker=TextView(this).apply{
+    text="🔊";textSize=24f;gravity=Gravity.CENTER;contentDescription="Přehrát slovo"
+    background=GradientDrawable().apply{setColor(Color.rgb(250,252,255));shape=GradientDrawable.OVAL;setStroke(2,Color.rgb(188,199,211))}
+    elevation=7f;isClickable=true;isFocusable=true
+    setOnClickListener{playWordAndResume(x.name)}
+   }
+   wrap.addView(speaker,FrameLayout.LayoutParams(72,72,Gravity.END or Gravity.BOTTOM).apply{setMargins(0,0,8,8)})
+   root.addView(wrap,LinearLayout.LayoutParams(520,520).apply{setMargins(8,12,8,12)})
   }else if(x.world!="Domeček"){
    val badge=TextView(this).apply{
     text=x.name.take(1).uppercase(Locale("cs","CZ"))
@@ -606,64 +625,93 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
   cancelListening()
   immersiveUi()
 
-  val frame=FrameLayout(this).apply{setBackgroundColor(Color.BLACK)}
-  frame.addView(ImageView(this).apply{
-   setImageResource(R.drawable.berialo_home)
-   scaleType=ImageView.ScaleType.FIT_XY
-   contentDescription="Berialo – Beriho dobrodružná mapa"
-  },FrameLayout.LayoutParams(-1,-1))
-
-  // Skutečné animované hvězdy překryjí statické hvězdy v obrázku.
-  mapStars(frame,"Domeček",.165f,.318f,.165f,.034f)
-  mapStars(frame,"Zvířata",.765f,.395f,.165f,.034f)
-  mapStars(frame,"Jídlo",.190f,.548f,.185f,.034f)
-  mapStars(frame,"Barvy a tvary",.765f,.575f,.165f,.034f)
-  mapStars(frame,"Škola",.745f,.785f,.175f,.034f)
-
-  // Počet nasbíraných hvězd na dřevěné cedulce.
-  val starCount=TextView(this).apply{
-   text=stars.toString()
-   gravity=Gravity.CENTER
-   textSize=22f
-   setTypeface(typeface,Typeface.BOLD)
-   setTextColor(Color.rgb(82,42,22))
-   background=GradientDrawable().apply{setColor(Color.rgb(255,244,215));cornerRadius=18f}
+  val page=LinearLayout(this).apply{
+   orientation=LinearLayout.VERTICAL
+   gravity=Gravity.CENTER_HORIZONTAL
+   setPadding(18,24,18,30)
+   background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(213,240,255),Color.rgb(246,250,230)))
   }
-  mapPlace(frame,starCount,.125f,.052f,.072f,.040f)
+  val scroll=ScrollView(this).apply{
+   isFillViewport=true
+   clipToPadding=false
+   addView(page,ViewGroup.LayoutParams(-1,-2))
+  }
 
-  // Dynamický badge truhly zakryje číslo z grafického návrhu.
-  val chestBadge=TextView(this).apply{
-   text=if(pendingChests>0)pendingChests.toString() else ""
-   gravity=Gravity.CENTER
-   textSize=13f
-   setTypeface(typeface,Typeface.BOLD)
-   setTextColor(Color.WHITE)
-   background=GradientDrawable().apply{
-    setColor(if(pendingChests>0)Color.rgb(232,36,53) else Color.rgb(250,246,235))
-    shape=GradientDrawable.OVAL
+  val title=TextView(this).apply{
+   text="BERIALO";textSize=38f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+   setTextColor(Color.rgb(20,92,197));setShadowLayer(4f,0f,2f,Color.WHITE)
+   background=GradientDrawable().apply{setColor(Color.rgb(242,190,111));cornerRadius=38f;setStroke(3,Color.WHITE)}
+   setPadding(30,14,30,14);elevation=10f
+  }
+  page.addView(title,LinearLayout.LayoutParams(-1,-2).apply{setMargins(32,4,32,10)})
+
+  val stats=TextView(this).apply{
+   text="★  "+stars+"     Poklady  "+pendingChests
+   textSize=18f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(88,55,32))
+   background=GradientDrawable().apply{setColor(Color.argb(245,255,252,239));cornerRadius=28f;setStroke(2,Color.rgb(235,204,147))}
+   setPadding(18,12,18,12)
+  }
+  page.addView(stats,LinearLayout.LayoutParams(-2,-2).apply{setMargins(0,0,0,14)})
+
+  val map=FrameLayout(this).apply{
+   background=GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,intArrayOf(Color.rgb(202,238,255),Color.rgb(226,245,203),Color.rgb(183,224,165))).apply{
+    cornerRadius=42f;setStroke(3,Color.rgb(255,255,255))
+   }
+   setPadding(14,26,14,26)
+  }
+  val mapColumn=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL}
+  map.addView(mapColumn,FrameLayout.LayoutParams(-1,-2))
+
+  val worlds=listOf("Domeček","Zvířata","Jídlo","Barvy a tvary","Škola")
+  worlds.forEachIndexed{index,world->
+   val side=LinearLayout(this).apply{gravity=if(index%2==0)Gravity.START else Gravity.END}
+   val card=LinearLayout(this).apply{
+    orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL
+    setPadding(14,12,14,12);isClickable=true;isFocusable=true;contentDescription=world
+    background=GradientDrawable().apply{setColor(Color.rgb(255,252,242));cornerRadius=36f;setStroke(3,Color.rgb(238,199,126))}
+    elevation=10f
+    setOnClickListener{if(world=="Škola")schoolPrep()else worldHub(world)}
+   }
+   val icon=TextView(this).apply{
+    text=when(world){"Domeček"->"⌂";"Zvířata"->"●";"Jídlo"->"●";"Barvy a tvary"->"◆";else->"A"}
+    textSize=30f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(57,113,171))
+    background=GradientDrawable().apply{setColor(Color.rgb(238,247,255));shape=GradientDrawable.OVAL;setStroke(2,Color.rgb(196,215,231))}
+   }
+   card.addView(icon,LinearLayout.LayoutParams(62,62))
+   val mid=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(12,0,8,0)}
+   mid.addView(TextView(this).apply{text=world;textSize=19f;setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(76,48,31))})
+   mid.addView(TwinkleStarsView(this,worldStars(world),5),LinearLayout.LayoutParams(-1,46))
+   card.addView(mid,LinearLayout.LayoutParams(0,-2,1f))
+   card.addView(TextView(this).apply{text="›";textSize=34f;gravity=Gravity.CENTER;setTextColor(Color.rgb(125,88,55))},LinearLayout.LayoutParams(38,-1))
+   side.addView(card,LinearLayout.LayoutParams((resources.displayMetrics.widthPixels*.72f).toInt(),-2))
+   mapColumn.addView(side,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,12,0,12)})
+   if(index<worlds.lastIndex){
+    mapColumn.addView(TextView(this).apply{text="•\n•\n•";textSize=20f;gravity=Gravity.CENTER;setTextColor(Color.rgb(119,168,103))},
+     LinearLayout.LayoutParams(-1,82))
    }
   }
-  mapPlace(frame,chestBadge,.928f,.083f,.050f,.030f)
+  page.addView(map,LinearLayout.LayoutParams(-1,-2).apply{setMargins(0,0,0,16)})
 
-  // Hlavní světy – zóny jsou přesně nad kartami v ilustraci.
-  mapHit(frame,"Domeček",.025f,.286f,.360f,.090f){worldHub("Domeček")}
-  mapHit(frame,"Zvířata",.650f,.357f,.345f,.090f){worldHub("Zvířata")}
-  mapHit(frame,"Jídlo",.040f,.505f,.375f,.090f){worldHub("Jídlo")}
-  mapHit(frame,"Barvy",.650f,.535f,.345f,.095f){worldHub("Barvy a tvary")}
-  mapHit(frame,"Škola",.610f,.745f,.385f,.090f){schoolPrep()}
+  val nav=LinearLayout(this).apply{
+   orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER
+   background=GradientDrawable().apply{setColor(Color.rgb(255,251,239));cornerRadius=32f;setStroke(2,Color.rgb(235,204,147))}
+   setPadding(6,8,6,8)
+  }
+  fun navButton(label:String,click:()->Unit){
+   nav.addView(Button(this).apply{
+    text=label;textSize=12f;setAllCaps(false);setTypeface(typeface,Typeface.BOLD);setTextColor(Color.rgb(74,55,40))
+    background=GradientDrawable().apply{setColor(Color.rgb(250,247,238));cornerRadius=22f;setStroke(1,Color.rgb(220,211,195))}
+    isClickable=true;isFocusable=true;setOnClickListener{click()}
+   },LinearLayout.LayoutParams(0,72,1f).apply{setMargins(3,0,3,0)})
+  }
+  navButton("Učení"){worlds(false)}
+  navButton("Výslovnost"){listen()}
+  navButton("Hra"){worlds(true)}
+  navButton("Odměny"){rewards()}
+  navButton("Profil"){profile()}
+  page.addView(nav,LinearLayout.LayoutParams(-1,-2))
 
-  // Horní ovládání.
-  mapHit(frame,"Nastavení",.855f,.020f,.125f,.075f){profile()}
-  mapHit(frame,"Poklady",.865f,.080f,.130f,.080f){if(pendingChests>0)treasureHunt() else rewards()}
-
-  // Spodní navigace – vizuál je součástí ilustrace, chování je skutečné.
-  mapHit(frame,"Učení",.025f,.875f,.180f,.110f){worlds(false)}
-  mapHit(frame,"Výslovnost",.205f,.875f,.185f,.110f){listen()}
-  mapHit(frame,"Hra",.390f,.875f,.190f,.110f){worlds(true)}
-  mapHit(frame,"Sbírka odměn",.580f,.875f,.205f,.110f){rewards()}
-  mapHit(frame,"Profil",.785f,.875f,.205f,.110f){profile()}
-
-  setContentView(frame)
+  setContentView(scroll)
  }
  private fun worlds(q:Boolean){
   base();text("Vyber si svět",30,true)
@@ -772,7 +820,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    }else{
     speechStatus?.text=" Tohle slovo už máš splněné. Můžeš pokračovat dál."
    }
-   speechNextButton?.visibility=View.VISIBLE
+   unlockNextButton()
   }else{
    val best=results.firstOrNull()?.trim().orEmpty()
    speechStatus?.text=if(best.isBlank())"Nerozuměl jsem. Poslouchám znovu…" else "Slyšel jsem „"+best+"“. Poslouchám znovu, řekni: "+target+"."
