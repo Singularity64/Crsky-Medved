@@ -416,7 +416,7 @@ class MainActivity:Activity(),TextToSpeech.OnInitListener{
    elevation=13f
   }
   plaque.addView(TextView(this).apply{
-   text="BERIALO";textSize=38f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
+   text="Berialo";textSize=38f;gravity=Gravity.CENTER;setTypeface(typeface,Typeface.BOLD)
    setTextColor(Color.rgb(20,92,197));setShadowLayer(4f,0f,2f,Color.WHITE)
   })
   plaque.addView(TextView(this).apply{
