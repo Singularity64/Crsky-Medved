@@ -11,8 +11,8 @@ android {
         applicationId = "cz.berialo.app"
         minSdk = 23
         targetSdk = 35
-        versionCode = 17
-        versionName = "1.8.8"
+        versionCode = 18
+        versionName = "2.0.0"
     }
 
     compileOptions {
@@ -20,7 +20,5 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
 }
