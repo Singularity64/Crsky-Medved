@@ -8,6 +8,9 @@ on:
       - 'CeskyMedvidek/**'
       - '.github/workflows/main.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,9 +31,19 @@ jobs:
         working-directory: CeskyMedvidek
         run: gradle clean assembleDebug
 
-      - name: Upload APK
+      - name: Prepare APK
+        run: cp CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk Berialo-2.0.0.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: Berialo-APK
-          path: CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk
+          path: Berialo-2.0.0.apk
           if-no-files-found: error
+
+      - name: Publish downloadable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete berialo-latest --yes --cleanup-tag || true
+          gh release create berialo-latest Berialo-2.0.0.apk --title "Berialo 2.0.0" --notes "Minimal Berialo start screen build"
