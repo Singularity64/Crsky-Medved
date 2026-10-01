@@ -1,14 +1,16 @@
-name: Build Android APK
+name: Build Berialo APK
 
 on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+    paths:
+      - 'CeskyMedvidek/**'
+      - '.github/workflows/main.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,39 +24,13 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Install exact Domecek images
+      - name: Build clean APK
         working-directory: CeskyMedvidek
-        run: |
-          set -e
-          mkdir -p app/src/main/res/drawable-nodpi
-          cat imagepack/chunk*.txt | base64 -d > /tmp/domecek_exact10.zip
-          rm -f app/src/main/res/drawable-nodpi/word_*.webp
-          rm -f app/src/main/res/drawable/word_deka.xml
-          rm -f app/src/main/res/drawable/word_stul.xml
-          rm -f app/src/main/res/drawable/word_zidle.xml
-          rm -f app/src/main/res/drawable/word_okno.xml
-          rm -f app/src/main/res/drawable/word_dvere.xml
-          unzip -o /tmp/domecek_exact10.zip -d app/src/main/res/drawable-nodpi
-          ls -lh app/src/main/res/drawable-nodpi/word_*.webp
-
-      - name: Install exact Berialo home
-        working-directory: CeskyMedvidek
-        run: |
-          set -e
-          mkdir -p app/src/main/res/drawable-nodpi
-          rm -f app/src/main/res/drawable-nodpi/berialo_home.webp
-          rm -f app/src/main/res/drawable-nodpi/berialo_map_bg.webp
-          cat homepack/chunk*.txt | base64 -d > app/src/main/res/drawable-nodpi/berialo_home.jpg
-          test -s app/src/main/res/drawable-nodpi/berialo_home.jpg
-          file app/src/main/res/drawable-nodpi/berialo_home.jpg
-          ls -lh app/src/main/res/drawable-nodpi/berialo_home.jpg
-
-      - name: Build APK
-        working-directory: CeskyMedvidek
-        run: gradle assembleDebug
+        run: gradle clean assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: CeskyMedvidek-APK
+          name: Berialo-APK
           path: CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
