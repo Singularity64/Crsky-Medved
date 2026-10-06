@@ -38,7 +38,7 @@ class MainActivity : Activity() {
 
     private fun showIntroImage() {
         val image = ImageView(this).apply {
-            setImageResource(cz.ceskymedvidek.app.R.drawable.berialo_home)
+            setImageResource(cz.ceskymedvidek.app.R.drawable.main_loading_image)
             scaleType = ImageView.ScaleType.CENTER_CROP
             setBackgroundColor(Color.WHITE)
         }
