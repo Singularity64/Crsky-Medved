@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -31,26 +31,38 @@ jobs:
           unzip -t CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk
           $ANDROID_HOME/build-tools/35.0.0/apksigner verify --verbose --print-certs CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Install and launch on Android emulator
+      - name: Install launch and capture diagnostics
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64
           profile: pixel_6
           script: |
-            adb install CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk
+            set -o pipefail
+            adb logcat -c
+            adb install -r CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -W -n cz.berialo.loading/cz.ceskymedvidek.app.MainActivity
             sleep 1
-            adb shell pidof cz.berialo.loading
+            adb exec-out screencap -p > splash.png || true
             sleep 3
-            adb shell pidof cz.berialo.loading
-            adb shell dumpsys activity activities | grep -E "cz.berialo.loading|MainActivity"
+            adb exec-out screencap -p > after-transition.png || true
+            if ! adb shell pidof cz.berialo.loading; then
+              echo "APP PROCESS DIED"
+              adb logcat -d -v threadtime | grep -E -A 80 -B 20 "FATAL EXCEPTION|AndroidRuntime|cz.berialo.loading" || true
+              exit 1
+            fi
+            adb shell dumpsys activity activities | grep -E "cz.berialo.loading|MainActivity" || true
+            adb logcat -d -v threadtime | grep -E -A 40 -B 10 "FATAL EXCEPTION|AndroidRuntime" && exit 1 || true
 
       - name: Prepare verified APK
         run: cp CeskyMedvidek/app/build/outputs/apk/debug/app-debug.apk Berialo-install-tested.apk
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: Berialo-install-tested
-          path: Berialo-install-tested.apk
-          if-no-files-found: error
+          name: Berialo-test-output
+          path: |
+            Berialo-install-tested.apk
+            splash.png
+            after-transition.png
+          if-no-files-found: warn
