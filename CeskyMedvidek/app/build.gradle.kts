@@ -8,11 +8,11 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "cz.berialo.app.fixed"
+        applicationId = "cz.berialo.loading"
         minSdk = 23
         targetSdk = 35
-        versionCode = 20
-        versionName = "2.0.3"
+        versionCode = 1
+        versionName = "1.0"
     }
 
     compileOptions {
